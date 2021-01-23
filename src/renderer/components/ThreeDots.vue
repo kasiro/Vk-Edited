@@ -1,7 +1,7 @@
 <template>
-	<div class="option three-dots">
-		<div class="dotsbackg" @click="$emit('three-dots')">
-			<i class="fas fa-ellipsis-v"></i>
+	<div class="option three-dots myhover">
+		<div class="dotsbackg myhover" @click="$emit('three-dots')">
+			<i class="fas fa-ellipsis-v myhover"></i>
 		</div>
 	</div>
 </template>

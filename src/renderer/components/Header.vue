@@ -14,7 +14,6 @@
 		<div class="chat-header-action">
 			<ThreeDots
 				@three-dots="ThreeDots"
-				class="myhover"
 			/>
 		</div>
 	</div>
