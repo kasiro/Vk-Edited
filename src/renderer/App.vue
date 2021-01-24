@@ -17,14 +17,24 @@
 		<div class="settings" style="display: none;">
 			<span class="setText weight_bold">Настройки</span>
 			<div class="settings_close">
-				<i class="fas fa-times" @click="Close_settings()"></i>
+				<i class="fas fa-times myhover" @click="Close_settings()"></i>
 			</div>
 			<div class="bar"></div>
 			<ul class="left_list">
-				<li class="list_item">Аккаунт</li>
-				<li class="list_item">Общие</li>
-				<li class="list_item">Аватарки</li>
+				<li class="list_item">
+					<i class="far fa-user-circle"></i>
+					Аккаунт
+				</li>
+				<li class="list_item">
+					<i class="fas fa-cog"></i>
+					Общие
+				</li>
+				<li class="list_item">
+					<i class="fas fa-user-circle"></i>
+					Аватарки
+				</li>
 			</ul>
+			<div class="hr"></div>
 		</div>
 		<Accs
 			@add-acount="addAcount"
