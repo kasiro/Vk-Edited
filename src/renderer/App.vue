@@ -20,20 +20,10 @@
 				<i class="fas fa-times myhover" @click="Close_settings()"></i>
 			</div>
 			<div class="bar"></div>
-			<ul class="left_list">
-				<li class="list_item">
-					<i class="far fa-user-circle"></i>
-					Аккаунт
-				</li>
-				<li class="list_item">
-					<i class="fas fa-cog"></i>
-					Общие
-				</li>
-				<li class="list_item">
-					<i class="fas fa-user-circle"></i>
-					Аватарки
-				</li>
-			</ul>
+			<settings_menu
+				@settings-menu-select="settings_menu_select"
+				:settings_menu_items="settings_menu_items"
+			/>
 			<div class="hr"></div>
 		</div>
 		<Accs
@@ -49,7 +39,7 @@
 				@search-enter="search_enter"
 			/>
 			<Users
-				v-bind:users="users"
+				:users="users"
 				@select-chat="selectChat"
 			/>
 		</div>
@@ -72,6 +62,7 @@
 	import Users from '@/components/Users'
 	import Header from '@/components/Header'
 	import Main_menu from '@/components/menu'
+	import settings_menu from '@/components/settings_menu'
 	// import Chat from '@/components/Chat'
 	// import Sender from '@/components/Sender'
 	import VK from 'vk-api-help'
@@ -83,12 +74,33 @@
 			labelSearch,
 			Users,
 			Header,
-			Main_menu
+			Main_menu,
+			settings_menu
 		},
 		data() {
 			return {
 				selectedId: 0,
 				users: [],
+				settings_menu_items: [
+					{
+						isSelect: true,
+						name: 'Аккаунт',
+						icon: 'far fa-user-circle',
+						event: 'settings-acount'
+					},
+					{
+						isSelect: false,
+						name: 'Основное',
+						icon: 'fas fa-cog',
+						event: 'settings-general'
+					},
+					{
+						isSelect: false,
+						name: 'Аватарки',
+						icon: 'fas fa-user-circle',
+						event: 'settings-avatars'
+					}
+				],
 				Search_action: 'open',
 				Search_action_last: 'SearchOut',
 				settings_menu: 'open',
@@ -143,6 +155,20 @@
 		methods: {
 			getToken(){
 				return token;
+			},
+			settings_menu_select(item){
+				for (var settings_menu_item of this.settings_menu_items){
+					if (settings_menu_item.isSelect == true){
+						settings_menu_item.isSelect = false;
+					}
+				}
+				for (var settings_menu_item of this.settings_menu_items){
+					if (item.isSelect == false){
+						if (item.name == settings_menu_item.name){
+							settings_menu_item.isSelect = true;
+						}
+					}
+				}
 			},
 			Close_settings(){
 				document.querySelector('.hider').style.display = 'none';

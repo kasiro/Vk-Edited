@@ -49,9 +49,22 @@ body [data-mode="dark"] {
 	background: #00000000;
 }
 
+.settings {
+	padding: 0;
+	width: 91%;
+	height: 92.7%;
+	text-align: left;
+	border-radius: 20px;
+	margin-left: 30px;
+	margin-top: 30px;
+	position: absolute;
+	background: var(--bg-lighten);
+	z-index: 20;
+	transition: 0.3s;
+}
 .setText {
 	margin-top: 15px;
-    margin-left: 10px;
+    margin-left: 30px;
     width: 90px;
     height: 20px;
 }
@@ -60,37 +73,38 @@ body [data-mode="dark"] {
     margin-top: 10px;
     width: 100%;
     display: flex;
-    margin-left: -35px;
+    margin-left: -15px;
     justify-content: flex-end;
     position: absolute;
     z-index: 22;
 }
 .bar {
 	display: flex;
-	width: 96%;
+	width: 100%;
 	height: 45px;
 	position: absolute;
 	border-bottom: 1px solid rgb(33, 33, 33);
 }
 .left_list {
-	max-width: 200px;
+	width: 30%;
 	min-width: 100px;
     max-height: 300px;
     position: absolute;
-    margin-top: 70px;
-    margin-left: 20px;
+    margin-top: 55px;
+    margin-left: 5px;
+}
+.list_item.select {
+	background: var(--bg-f);
+	border-radius: 50px;
 }
 .list_item {
 	flex-direction: column;
 	font-size: 15px;
 	padding-left: 10px;
 	padding-top: 6px;
-	width: 100%;
+	width: 92%;
 	height: 25px;
-	&:hover {
-		background: var(--bg-f);
-		border-radius: 50px;
-	}
+
 	&:first-child {
 		margin-top: -0px;
 	}
@@ -124,6 +138,8 @@ body [data-mode="dark"] {
 #placeholder {
 	width: 100%;
 	height: 100%;
+	display: flex;
+	align-items: center;
 	position: absolute;
 	background-color: var(--bg-lighten);
 	transition: 0.5s ease;
@@ -133,7 +149,7 @@ body [data-mode="dark"] {
 #placeholder .plase_mini {
 	width: 400px;
 	height: 400px;
-	position: relative;
+	position: absolute;
 	text-align: center;
 	top: 50%;
 	left: 50%;
@@ -227,19 +243,7 @@ ul, li {
     height: 100%;
     width: 100%;
 }
-.settings {
-	padding: 0 20px;
-	width: 91%;
-	height: 92.7%;
-	text-align: left;
-	border-radius: 20px;
-	margin-left: 30px;
-	margin-top: 30px;
-	position: absolute;
-	background: var(--bg-lighten);
-	z-index: 20;
-	transition: 0.3s;
-}
+
 .status i {
 	font-style: normal;
 }
