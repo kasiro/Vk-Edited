@@ -24,6 +24,11 @@
 				>
 					<div class="text myhover">Добавить token</div>
 				</div>
+				<div class="close_two">
+					<div class="close_form">
+						<i class="fas fa-times myhover" @click="Close_token()"></i>
+					</div>
+				</div>
 			</form>
 		</div>
 		<Main_menu
@@ -243,6 +248,9 @@
 					var ot = 10;
 					avs[0].setAttribute("style", "margin-top: " + ot + `px; transition: ${time};`);
 				}
+			},
+			Close_token(){
+				document.querySelector('.addAcount_').style.display = 'none';
 			},
 			addAcount() {
 				document.querySelector('.addAcount_').style.display = 'flex';

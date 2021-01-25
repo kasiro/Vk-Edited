@@ -30,7 +30,7 @@
   cursor: default;
 }
 
-body [data-mode=dark] {
+body {
   color: #fff;
   margin: 0px;
   padding: 0px;
@@ -109,6 +109,19 @@ body [data-mode=dark] {
   height: 20px;
   padding: 5px 20px;
 }
+.addAcount_ .form .close_two {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  height: 100%;
+}
+.addAcount_ .form .close_form {
+  font-size: 25px;
+  margin-right: 5px;
+  margin-top: 5px;
+  width: 25px;
+  height: 25px;
+}
 
 .round-10 {
   border-radius: 10px;
@@ -163,7 +176,7 @@ body [data-mode=dark] {
   width: 100%;
   height: 45px;
   position: absolute;
-  border-bottom: 1px solid #212121;
+  border-bottom: 1px solid var(--bg-color);
 }
 
 .left_list {
@@ -366,7 +379,7 @@ ul, li {
   margin-top: 0px;
 }
 #app .settings_menu .menu_list .menu_list_item:not(:first-child) {
-  margin-top: 10px;
+  margin-top: 5px;
 }
 #app .settings_menu .menu_list .menu_list_item i {
   margin-right: 2px;
