@@ -10,7 +10,7 @@ node_modules/*
 build/*
 dist/*
 src/renderer/token.txt
-src/renderer/users.json
+src/renderer/*.json
 src/renderer/prepros.config
 webpack.config.js
 webpack.config.js*
