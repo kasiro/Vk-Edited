@@ -8,6 +8,24 @@
 				<div class="text">Данные загружаются</div>
 			</div>
 		</div>
+		<div class="addAcount_" style="display: none;">
+			<form class="form bg round-15">
+				<div class="first">
+					<div class="text">token: </div>
+					<input
+						type="text"
+						v-model="token_text"
+						class="search feild"
+					>
+				</div>
+				<div
+					class="save_tok myhover"
+					@click="add_token"
+				>
+					<div class="text myhover">Добавить token</div>
+				</div>
+			</form>
+		</div>
 		<Main_menu
 			@change-theme="change_theme"
 			@show-settings="Settings"
@@ -30,6 +48,8 @@
 			@add-acount="addAcount"
 			@settings="Settings_menu"
 			@click-out="Settings_menu_close"
+			@select-accs="select_accs"
+			v-bind:Accs_users="Accs_users"
 		/>
 		<div class="list">
 			<labelSearch
@@ -66,9 +86,10 @@
 	// import Chat from '@/components/Chat'
 	// import Sender from '@/components/Sender'
 	import VK from 'vk-api-help'
-	import token from 'raw-loader!./token.txt'
+	// import token from 'raw-loader!./token.txt'
+	import fs from 'fs'
 	export default {
-		name: 'elvue-test',
+		name: 'general',
 		components: {
 			Accs,
 			labelSearch,
@@ -80,7 +101,10 @@
 		data() {
 			return {
 				selectedId: 0,
+				Active_token: '',
 				users: [],
+				token_text: '',
+				Accs_users: [],
 				settings_menu_items: [
 					{
 						isSelect: true,
@@ -117,44 +141,160 @@
 				this.load_chats();
 			}
 		},
-		mounted() {
-			setInterval(() => {
-				if (this.updates){
-					this.update_chats();
-				}
-			}, 5000);
-			this.getToken();
-			// setTimeout(() => {
-			// 	document.querySelector('#app').setAttribute('data-mode', 'light');
-			// }, 6000);
+		async mounted() {
 			console.log('mounted');
+			// setInterval(() => {
+			// 	if (this.updates){
+			// 		this.update_chats();
+			// 	}
+			// }, 5000);
+			
 			var preloadAvatar = true;
 			if (preloadAvatar === true){
-				this.VkMethod('users.get', { fields: 'photo_200' }, json => {
-					document.querySelector('.acAvatar:nth-of-type(1) > img').setAttribute('src', json.response[0].photo_200);
-				});
-			} else {
-				document.querySelector('.acAvatar:nth-of-type(1) > img').setAttribute('src', `./assets/${this.randomInteger(1, 4)}.jpg`);
-			}
-
-			var avs = document.querySelectorAll('[class="acAvatar"]');
-			if (avs.length > 1){
-				var ot = 10;
-				var p = 50;
-				var i = 1;
-				for (let av of avs){
-					av.setAttribute("style", "margin-top: " + ot + "px; transition: 0.3s;");
-					ot += p;
-					i++;
+				var users_json = this.loadJson('users.json');
+				var arr = [];
+				global.arr;
+				if (users_json.length > 0){
+					if (users_json.length > 1){
+						for (var i = 0; i < users_json.length; i++){
+							var el = users_json[i];
+							
+							this.Active_token = el.token;
+							var vk = new VK.VkRequest(this.Active_token)
+							await vk.method('users.get', { fields: 'photo_200, id' }).then((json) => {
+								var user = json.response[0];
+								global.arr;
+								arr.push({
+									img: user.photo_200,
+									id: user.id,
+									token: this.Active_token
+								});
+							}).catch({ name: 'VkApiError' }, error => {
+								console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
+								switch(error.error_code) {
+										case 14:
+												console.log('Captcha error');
+										break;  
+										case 5:
+												console.log('No auth');
+										break;
+										default:
+											console.log(error.error_msg);
+								}
+							}).catch(error => {
+								console.log(`Other error ${error}`);
+							});
+						}
+						// console.log('arr:', arr);
+					} else {
+						this.Active_token = users_json[0].token;
+						var vk = new VK.VkRequest(this.Active_token)
+						await vk.method('users.get', { fields: 'photo_200, id' }).then((json) => {
+							var user = json.response[0];
+							global.arr;
+							arr.push({
+								img: user.photo_200,
+								id: user.id,
+								token: this.Active_token
+							});
+						}).catch({ name: 'VkApiError' }, error => {
+							console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
+							switch(error.error_code) {
+									case 14:
+											console.log('Captcha error');
+									break;  
+									case 5:
+											console.log('No auth');
+									break;
+									default:
+										console.log(error.error_msg);
+							}
+						}).catch(error => {
+							console.log(`Other error ${error}`);
+						});
+					}
+				} else {
+					document.querySelector('.add.myhover').click();
+					document.querySelector('.hider').style.display = 'block';
+					document.querySelector('.hider').style.background = '#212121';
+					document.querySelector('.hider').style.opacity = 1;
+					this.hidePlaceholder();
 				}
-			} else {
-				var ot = 10;
-				avs[0].setAttribute("style", "margin-top: " + ot + "px; transition: 0.3s;");
 			}
+			this.Active_token = '';
+			this.getToken();
+			this.Accs_users = arr;
+			console.log(this.Accs_users);
 		},
 		methods: {
+			loaded(){
+				var time = '0.5s';
+				var avs = document.querySelectorAll('[class="acAvatar"]');
+				if (avs.length > 1){
+					var ot = 10;
+					var p = 50;
+					var i = 1;
+					for (let av of avs){
+						av.setAttribute("style", "margin-top: " + ot + `px; transition: ${time};`);
+						ot += p;
+						i++;
+					}
+				} else {
+					var ot = 10;
+					avs[0].setAttribute("style", "margin-top: " + ot + `px; transition: ${time};`);
+				}
+			},
+			addAcount() {
+				document.querySelector('.addAcount_').style.display = 'flex';
+			},
+			add_token() {
+				var text = this.token_text;
+				var json = this.loadJson('users.json');
+				var exist = false;
+				for (var el of json){
+					if (el.token == text){
+						var exist = true;
+						break;
+					}
+				}
+				if (exist == false){
+					this.token_text = '';
+					json.push({
+						token: text
+					});
+					this.saveJson('users.json', json);
+					window.location.reload();
+				} else {
+
+				}
+
+			},
+			select_accs(user_id){
+				var banner = document.querySelector('.banner');
+				if (this.in_array('hidden', banner.classList)){
+					banner.classList.remove('hidden');
+				}
+				var Accs = this.Accs_users;
+				for (var el of Accs){
+					if (el.id == user_id){
+						this.Active_token = el.token;
+					}
+				}
+				this.load_chats();
+				// console.log(user_id, this.Active_token);
+			},
+			loadJson(filename){
+				return JSON.parse(fs.readFileSync(__dirname + '/' + filename, 'utf8'));
+			},
+			saveJson(filename, data){
+				fs.writeFileSync(__dirname + '/' + filename, JSON.stringify(data, null, '\t'));
+			},
 			getToken(){
-				return token;
+				if (this.Active_token.length == 0){
+					var json = this.loadJson('users.json');
+					this.Active_token = json[0].token;
+				}
+				return this.Active_token;
 			},
 			settings_menu_select(item){
 				for (var settings_menu_item of this.settings_menu_items){
@@ -380,6 +520,10 @@
 					// console.log(json.response.items[0]);
 					await this.addUsers(json);
 					this.hidePlaceholder();
+					this.sleep(500).then(() => {
+						this.loaded();
+					});
+					
 				}).catch({ name: 'VkApiError' }, error => {
 					console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
 					switch(error.error_code) {
@@ -420,7 +564,7 @@
 					switch(error.error_code) {
 							case 14:
 									console.log('Captcha error');
-							break;  
+							break;
 							case 5:
 									console.log('No auth');
 							break;
@@ -440,9 +584,6 @@
 			        if(haystack[i] == needle) return true;
 			    }
 			    return false;
-			},
-			addAcount() {
-				console.log('addAcount!');
 			},
 			randomInteger(min, max) {
 				// случайное число от min до (max+1)

@@ -4,6 +4,9 @@ module.exports = {
       {
         test: /\.txt$/i,
         use: 'raw-loader',
+        options: {
+	      hotReload: false // disables Hot Reload
+	    }
       },
     ],
   },

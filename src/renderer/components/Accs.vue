@@ -1,11 +1,10 @@
 <template>
 	<div id="myAccs">
-		<div class="acAvatar">
-			<img class="myhover" src="../assets/1.jpg" alt="">
-		</div>
-		<div class="acAvatar">
-			<img class="myhover" src="../assets/4.jpg" alt="">
-		</div>
+		<Account
+			v-for="Acc of Accs_users"
+			v-bind:Acc="Acc"
+			@select-accs="select_accs"
+		/>
 		<div class="acAvatar">
 			<div class="add myhover" @click="$emit('add-acount')">
 				<i class="fas fa-plus myhover"></i>
@@ -20,9 +19,13 @@
 
 <script>
 	import ThreeDots from '@/components/ThreeDots'
+	import Account from '@/components/Account'
 	export default {
+		name: 'Accs',
+		props: ['Accs_users'],
 		components: {
-			ThreeDots
+			ThreeDots,
+			Account
 		},
 		methods: {
 			Threedots(){
@@ -30,6 +33,9 @@
 			},
 			ClickOut(){
 				this.$emit('click-out');
+			},
+			select_accs(Acc_id){
+				this.$emit('select-accs', Acc_id);
 			}
 		}
 	}
