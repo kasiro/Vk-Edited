@@ -31,11 +31,13 @@
 				</div>
 			</form>
 		</div>
-		<Main_menu
-			@change-theme="change_theme"
-			@show-settings="Settings"
-			@change-avatar="change_avatar"
-		/>
+		<div class="menu_wrap">
+			<Main_menu
+				v-bind:items="items"
+				@show-settings="Settings"
+				@change-theme="change_theme"
+			/>
+		</div>
 		<div class="hider" style="display: none;"></div>
 		<div class="settings" style="display: none;">
 			<span class="setText weight_bold">Настройки</span>
@@ -43,11 +45,13 @@
 				<i class="fas fa-times myhover" @click="Close_settings()"></i>
 			</div>
 			<div class="bar"></div>
-			<settings_menu
-				@settings-menu-select="settings_menu_select"
-				:settings_menu_items="settings_menu_items"
-			/>
-			<div class="hr"></div>
+			<div class="settings_panel">
+				<settings_menu
+					@settings-menu-select="settings_menu_select"
+					:settings_menu_items="settings_menu_items"
+				/>
+				<div class="hr"></div>
+			</div>
 		</div>
 		<Accs
 			@add-acount="addAcount"
@@ -64,19 +68,29 @@
 				@search-enter="search_enter"
 			/>
 			<Users
-				:users="users"
+				v-bind:users="users"
 				@select-chat="selectChat"
 			/>
 		</div>
-		<div class="list2">
-			<div class="banner">
-				<div class="text weight_bold">Выберете Диалог</div>
+		<div class="list2_wrap">
+			<div class="list2">
+				<div class="banner">
+					<div class="text weight_bold">Выберете Диалог</div>
+				</div>
+				<Header
+					class="hidden"
+					@three-dots-header="HeaderUserDots"
+				/>
+				<div class="header_menu_wrap">
+					<Main_menu
+						v-bind:items="Header_items"
+						@show-settings="Settings"
+						@change-theme="change_theme"
+					/>
+				</div>
+				<!-- <Chat />
+				<Sender /> -->
 			</div>
-			<Header
-				@three-dots-header="HeaderUserDots"
-			/>
-			<!-- <Chat />
-			<Sender /> -->
 		</div>
 	</div>
 </template>
@@ -108,8 +122,33 @@
 				selectedId: 0,
 				Active_token: '',
 				users: [],
+				items: [
+					{
+						name: 'Настройки',
+						icon: 'fas fa-cog',
+						event: 'show-settings'
+					},
+					{
+						name: 'Тёмная',
+						icon: 'fas fa-moon',
+						event: 'change-theme'
+					}
+				],
+				Header_items: [
+					{
+						name: 'Аккаунт',
+						icon: 'far fa-user-circle',
+						event: 'show-acount'
+					},
+					{
+						name: 'Отключить уведомления',
+						icon: 'far fa-bell',
+						event: 'notify-off'
+					}
+				],
 				token_text: '',
 				Accs_users: [],
+				Avatars_json: [],
 				settings_menu_items: [
 					{
 						isSelect: true,
@@ -134,6 +173,8 @@
 				Search_action_last: 'SearchOut',
 				settings_menu: 'open',
 				settings_menu_last: 'open',
+				header_settings_menu: 'open',
+				header_settings_menu_last: 'open',
 				updates: true
 			}
 		},
@@ -148,11 +189,12 @@
 		},
 		async mounted() {
 			console.log('mounted');
-			// setInterval(() => {
-			// 	if (this.updates){
-			// 		this.update_chats();
-			// 	}
-			// }, 5000);
+			this.Avatars_json = this.loadJson('Avatars.json');
+			setInterval(() => {
+				if (this.updates){
+					this.update_chats();
+				}
+			}, 5000);
 			
 			var preloadAvatar = true;
 			if (preloadAvatar === true){
@@ -169,11 +211,19 @@
 							await vk.method('users.get', { fields: 'photo_200, id' }).then((json) => {
 								var user = json.response[0];
 								global.arr;
-								arr.push({
-									img: user.photo_200,
-									id: user.id,
-									token: this.Active_token
-								});
+								if (this.avatarFilter(user.id) !== false){
+									arr.push({
+										img: this.avatarFilter(user.id),
+										id: user.id,
+										token: this.Active_token
+									});
+								} else {
+									arr.push({
+										img: user.photo_200,
+										id: user.id,
+										token: this.Active_token
+									});
+								}
 							}).catch({ name: 'VkApiError' }, error => {
 								console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
 								switch(error.error_code) {
@@ -197,11 +247,19 @@
 						await vk.method('users.get', { fields: 'photo_200, id' }).then((json) => {
 							var user = json.response[0];
 							global.arr;
-							arr.push({
-								img: user.photo_200,
-								id: user.id,
-								token: this.Active_token
-							});
+							if (this.avatarFilter(user.id) !== false){
+								arr.push({
+									img: this.avatarFilter(user.id),
+									id: user.id,
+									token: this.Active_token
+								});
+							} else {
+								arr.push({
+									img: user.photo_200,
+									id: user.id,
+									token: this.Active_token
+								});
+							}
 						}).catch({ name: 'VkApiError' }, error => {
 							console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
 							switch(error.error_code) {
@@ -255,32 +313,63 @@
 			addAcount() {
 				document.querySelector('.addAcount_').style.display = 'flex';
 			},
+			addAvatarRemove(obj){
+				
+			},
 			add_token() {
-				var text = this.token_text;
-				var json = this.loadJson('users.json');
-				var exist = false;
-				for (var el of json){
-					if (el.token == text){
-						var exist = true;
-						break;
+				if (this.token_text.length > 0){
+					var text = this.token_text;
+					var json = this.loadJson('users.json');
+					var exist = false;
+					for (var el of json){
+						if (el.token == text){
+							var exist = true;
+							break;
+						}
+					}
+					if (exist == false){
+						this.token_text = '';
+						json.push({
+							token: text
+						});
+						this.saveJson('users.json', json);
+						window.location.reload();
+					} else {
+
 					}
 				}
-				if (exist == false){
-					this.token_text = '';
-					json.push({
-						token: text
-					});
-					this.saveJson('users.json', json);
-					window.location.reload();
+			},
+			avatarFilter(id){
+				if (this.Avatars_json.length == 0){
+					var json = this.loadJson('Avatars.json');
+					for (var el of json){
+						if (el.id == id){
+							if (el.use == true){
+								return el.img;
+							}
+						}
+					}
+					return false;
 				} else {
-
+					var json = this.Avatars_json;
+					for (var el of json){
+						if (el.id == id){
+							if (el.use == true){
+								return el.img;
+							}
+						}
+					}
+					return false;
 				}
-
 			},
 			select_accs(user_id){
 				var banner = document.querySelector('.banner');
 				if (this.in_array('hidden', banner.classList)){
 					banner.classList.remove('hidden');
+				}
+				var header = document.querySelector('#header');
+				if (!this.in_array('hidden', header.classList)){
+					header.classList.add('hidden');
 				}
 				var Accs = this.Accs_users;
 				for (var el of Accs){
@@ -322,6 +411,7 @@
 			Close_settings(){
 				document.querySelector('.hider').style.display = 'none';
 				document.querySelector('.settings').style.display = 'none';
+				// this.saveJson('Avatars.json', this.Avatars_json);
 			},
 			search_enter(text){
 				console.log(text)
@@ -334,7 +424,7 @@
 
 				// });
 			},
-			change_theme(obj) {
+			change_theme() {
 				this.settings_menu_last = 'menu_list_item';
 				setTimeout(() => {
 					this.settings_menu_last = 'menu';
@@ -369,14 +459,14 @@
 			Settings_menu_close(){
 				// v-click-outside="Settings_menu_close"
 				if (this.settings_menu == 'close' && this.settings_menu_last != 'menu_list_item'){
-					var settings_menu = document.querySelector('.settings_menu');
+					var settings_menu = document.querySelector('.menu_wrap .settings_menu');
 					settings_menu.style.opacity = 0;
 					settings_menu.style.display = 'none';
 					this.settings_menu = 'open';
 				}
 			},
 			Settings_menu(){
-				var settings_menu = document.querySelector('.settings_menu');
+				var settings_menu = document.querySelector('.menu_wrap .settings_menu');
 				if (this.settings_menu == 'open'){
 					settings_menu.style.display = 'flex';
 					settings_menu.style.opacity = 1;
@@ -391,19 +481,50 @@
 				}
 			},
 			HeaderUserDots(){
-				console.log('HeaderUserDots')
-			},
-			openChat(user_id){
-				var banner = document.querySelector('.banner');
-				if (!('hidden' in banner.classList)){
-					banner.classList.add('hidden');
+				var settings_menu = document.querySelector('.header_menu_wrap .settings_menu');
+				if (this.header_settings_menu == 'open'){
+					settings_menu.style.display = 'flex';
+					settings_menu.style.opacity = 1;
+					settings_menu.style.display = 'flex';
+					this.header_settings_menu = 'close';
+					this.header_settings_menu_last = 'menu';
+					console.log('open menu')
+				} else {
+					settings_menu.style.opacity = 0;
+					settings_menu.style.display = 'none';
+					this.header_settings_menu = 'open';
+					this.header_settings_menu_last = 'menu';
+					console.log('close menu')
 				}
+			},
+			async openChat(user_id){
 				var HedAvatar = document.querySelector('.avatar img');
 				var HedName = document.querySelector('h5');
-				this.VkMethod('users.get', { user_ids: user_id, fields: 'photo_200, first_name, last_name' }, (json) => {
+
+				var vk = new VK.VkRequest(this.Active_token);
+				await vk.method('users.get', { user_ids: user_id, fields: 'photo_200, first_name, last_name' }).then(json => {
 					var User = json.response[0];
-					HedAvatar.setAttribute('src', User.photo_200);
+					if (this.avatarFilter(user_id) !== false){
+						var img_link = this.avatarFilter(user_id);
+					} else {
+						var img_link = User.photo_200;
+					}
+					HedAvatar.setAttribute('src', img_link);
 					HedName.textContent = `${User.first_name} ${User.last_name}`;
+				}).catch({ name: 'VkApiError' }, error => {
+					console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
+					switch(error.error_code) {
+							case 14:
+									console.log('Captcha error');
+							break;  
+							case 5:
+									console.log('No auth');
+							break;
+							default:
+								console.log(error.error_msg);
+					}
+				}).catch(error => {
+					console.log(`Other error ${error}`);
 				});
 				
 				// статус онлайна (0|1)
@@ -411,6 +532,14 @@
 				// this.VkMethod('messages.getLastActivity', { user_ids: user_id }, (json) => {
 					
 				// });
+				var banner = document.querySelector('.banner');
+				if (!('hidden' in banner.classList)){
+					banner.classList.add('hidden');
+				}
+				var header = document.querySelector('#header');
+				if (this.in_array('hidden', header.classList)){
+					header.classList.remove('hidden');
+				}
 			},
 			selectChat(CurUser){
 				this.selectedId = CurUser.id;
@@ -628,30 +757,57 @@
 									// var attah_prom = attah_one[attah_one.length-1].wall.attachments;
 									// var attah_two = attah_prom[attah_prom.length-1];
 									var attachments_type_one = attah_one[attah_one.length-1].type;
-									// var attachments_type_two = attah_two.type;
-									if (attachments_type_one == 'wall'){
-										var last_message = {
-											from: '',
-											text: 'Запись на стене'
-										};
-									}
-									if (attachments_type_one == 'sticker'){
-										var last_message = {
-											from: '',
-											text: 'Стикер'
-										};
-									}
-									if (attachments_type_one == 'audio'){
-										var last_message = {
-											from: '',
-											text: 'Аудиозапись'
-										};
-									}
-									if (attachments_type_one == 'photo'){
-										var last_message = {
-											from: '',
-											text: 'Фотография'
-										};
+									// var attachments_type_two = attah_two.type;\
+									if (from_me){
+										if (attachments_type_one == 'wall'){
+											var last_message = {
+												from: 'Вы',
+												text: 'Запись на стене'
+											};
+										}
+										if (attachments_type_one == 'sticker'){
+											var last_message = {
+												from: 'Вы',
+												text: 'Стикер'
+											};
+										}
+										if (attachments_type_one == 'audio'){
+											var last_message = {
+												from: 'Вы',
+												text: 'Аудиозапись'
+											};
+										}
+										if (attachments_type_one == 'photo'){
+											var last_message = {
+												from: 'Вы',
+												text: 'Фотография'
+											};
+										}
+									} else {
+										if (attachments_type_one == 'wall'){
+											var last_message = {
+												from: '',
+												text: 'Запись на стене'
+											};
+										}
+										if (attachments_type_one == 'sticker'){
+											var last_message = {
+												from: '',
+												text: 'Стикер'
+											};
+										}
+										if (attachments_type_one == 'audio'){
+											var last_message = {
+												from: '',
+												text: 'Аудиозапись'
+											};
+										}
+										if (attachments_type_one == 'photo'){
+											var last_message = {
+												from: '',
+												text: 'Фотография'
+											};
+										}
 									}
 								} else {
 									if (curent_user.last_message.fwd_messages.length > 0 && curent_user.last_message.text.length == 0){
@@ -700,7 +856,12 @@
 								}
 
 								var id = curent_user.last_message.peer_id;
-								var img_link = profile.photo_200;
+								if (this.avatarFilter(id) !== false){
+									var img_link = this.avatarFilter(id);
+								} else {
+									var img_link = profile.photo_200;
+								}
+								// var img_link = profile.photo_200;
 									
 								var timestamp = curent_user.last_message.date;
 								var dt = new Date(timestamp*1000);
