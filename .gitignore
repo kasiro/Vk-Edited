@@ -12,6 +12,7 @@ dist/*
 src/renderer/token.txt
 src/renderer/users.json
 src/renderer/prepros.config
+webpack.config.js
 !build/icons
 npm-debug.log
 npm-debug.log.*
