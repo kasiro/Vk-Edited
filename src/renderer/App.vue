@@ -281,6 +281,7 @@
 					}
 				}
 				this.load_chats();
+				this.selectedId = 0;
 				// console.log(user_id, this.Active_token);
 			},
 			loadJson(filename){
@@ -422,15 +423,11 @@
 					Mes.style.transition = 1 + 's';
 					var si = document.querySelector('.search-icon');
 					var sii = document.querySelector('.search-icon i');
-					var fe = document.querySelector('.search');
+					var fe = document.querySelector('.all-search .search');
 					fe.classList.remove('inpfull');
 					fe.style.paddingLeft = '5px';
 					si.classList.remove('search-icon-full');
-					si.style.marginTop = '4px';
-					sii.classList.remove('fa-times');
-					sii.classList.add('fa-search');
-					fe.setAttribute('value', '');
-			        fe.value = '';
+
 					this.Search_action = 'open';
 					this.Search_action_last = 'SearchOut';
 				}
@@ -448,10 +445,11 @@
 					Mes.style.transition = 1 + 's';
 					var si = document.querySelector('.search-icon');
 					var sii = document.querySelector('.search-icon i');
-					var fe = document.querySelector('.search');
+					var fe = document.querySelector('.all-search .search');
 					fe.classList.add('inpfull');
 					fe.style.paddingLeft = '16px';
 					si.classList.add('search-icon-full');
+					
 					// si.style.marginTop = '1px';
 					// sii.classList.remove('fa-search');
 					// sii.classList.add('fa-times');
