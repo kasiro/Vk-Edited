@@ -1,8 +1,11 @@
 <template>
 	<div id="header">
-		<div class="chat-header-user">
-			<figure class="avatar img">
-				<img src="../assets/3.jpg" class="rounded-circle">
+		<div class="chat-header-user myhover">
+			<figure class="avatar img" @click.right="onRightClick">
+				<img
+					src="../assets/3.jpg"
+					class="rounded-circle myhover"
+				>
 			</figure>
 			<div>
 				<h5 class="name weight_bold">Кто то</h5>
@@ -28,6 +31,9 @@
 		methods: {
 			ThreeDots(){
 				this.$emit('three-dots-header');
+			},
+			onRightClick(){
+				console.log('onRightClick');
 			}
 		}
 	}

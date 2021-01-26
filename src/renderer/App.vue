@@ -15,15 +15,15 @@
 					<input
 						type="text"
 						v-model="token_text"
-						class="search feild"
+						class="search2 feild"
 					>
+					<div class="token_wrap">
+						<div class="save_tok myhover" @click="add_token">
+							<div class="text myhover">ADD TOKEN</div>
+						</div>
+					</div>
 				</div>
-				<div
-					class="save_tok myhover"
-					@click="add_token"
-				>
-					<div class="text myhover">Добавить token</div>
-				</div>
+				
 				<div class="close_two">
 					<div class="close_form">
 						<i class="fas fa-times myhover" @click="Close_token()"></i>
@@ -283,11 +283,11 @@
 					document.querySelector('.hider').style.opacity = 1;
 					this.hidePlaceholder();
 				}
+				this.Active_token = '';
+				this.getToken();
+				this.Accs_users = arr;
+				console.log(this.Accs_users);
 			}
-			this.Active_token = '';
-			this.getToken();
-			this.Accs_users = arr;
-			console.log(this.Accs_users);
 		},
 		methods: {
 			loaded(){
@@ -734,6 +734,7 @@
 					for (profile of json.response.profiles){
 						if (curent_user.conversation.peer.type == 'user'){
 							if (curent_user.conversation.peer.id == profile.id){
+
 								if (curent_user.last_message.out == 1){
 									var from_me = true;
 								} else {
@@ -784,29 +785,56 @@
 											};
 										}
 									} else {
-										if (attachments_type_one == 'wall'){
-											var last_message = {
-												from: '',
-												text: 'Запись на стене'
-											};
-										}
-										if (attachments_type_one == 'sticker'){
-											var last_message = {
-												from: '',
-												text: 'Стикер'
-											};
-										}
-										if (attachments_type_one == 'audio'){
-											var last_message = {
-												from: '',
-												text: 'Аудиозапись'
-											};
-										}
-										if (attachments_type_one == 'photo'){
-											var last_message = {
-												from: '',
-												text: 'Фотография'
-											};
+										if (curent_user.last_message.text.length == 0){
+											if (attachments_type_one == 'wall'){
+												var last_message = {
+													from: '',
+													text: 'Запись на стене'
+												};
+											}
+											if (attachments_type_one == 'sticker'){
+												var last_message = {
+													from: '',
+													text: 'Стикер'
+												};
+											}
+											if (attachments_type_one == 'audio'){
+												var last_message = {
+													from: '',
+													text: 'Аудиозапись'
+												};
+											}
+											if (attachments_type_one == 'photo'){
+												var last_message = {
+													from: '',
+													text: 'Фотография'
+												};
+											}
+										} else {
+											if (attachments_type_one == 'wall'){
+												var last_message = {
+													from: '',
+													text: curent_user.last_message.text
+												};
+											}
+											if (attachments_type_one == 'sticker'){
+												var last_message = {
+													from: '',
+													text: 'Стикер'
+												};
+											}
+											if (attachments_type_one == 'audio'){
+												var last_message = {
+													from: '',
+													text: curent_user.last_message.text
+												};
+											}
+											if (attachments_type_one == 'photo'){
+												var last_message = {
+													from: '',
+													text: curent_user.last_message.text
+												};
+											}
 										}
 									}
 								} else {

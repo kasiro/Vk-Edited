@@ -2,7 +2,7 @@
 	<div class="settings_menu" style="display: none; opacity: 0;">
 		<ul class="menu_list">
 			<menu_item
-				v-for="item of items"
+				v-for="item in items"
 				v-bind:item="item"
 				@show-settings="Settings"
 				@change-theme="change_theme"

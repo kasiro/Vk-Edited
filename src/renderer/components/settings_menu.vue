@@ -1,7 +1,7 @@
 <template>
 	<ul class="left_list">
 		<settings_menu_item
-			v-for="item of settings_menu_items"
+			v-for="item in settings_menu_items"
 			:item="item"
 			@settings-acount="Settings_acount"
 			@settings-general="Settings_general"

@@ -1,7 +1,7 @@
 <template>
 	<div id="myAccs">
 		<Account
-			v-for="Acc of Accs_users"
+			v-for="Acc in Accs_users"
 			v-bind:Acc="Acc"
 			@select-accs="select_accs"
 		/>

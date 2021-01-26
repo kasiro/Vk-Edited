@@ -1,7 +1,7 @@
 <template>
 <div id="users">
 	<User
-		v-for="user of users"
+		v-for="user in users"
 		v-bind:selected="user.selected"
 		v-bind:fromviod="user.from.length == 0"
 		v-bind:IsUser="user.type == 'user' || user.type == 'group'"

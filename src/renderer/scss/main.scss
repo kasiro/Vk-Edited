@@ -16,11 +16,29 @@
 	--bg-f: #aaa;
 	--border-color: #424242;
 }
+.hit-the-floor {
+  color: #fff;
+  font-weight: bold;
+  font-family: Helvetica;
+  text-shadow: 
+    0 1px 0 #ccc, 
+    0 2px 0 #c9c9c9, 
+    0 3px 0 #bbb, 
+    0 4px 0 #b9b9b9, 
+    0 5px 0 #aaa, 
+    0 6px 1px rgba(0,0,0,.1), 
+    0 0 5px rgba(0,0,0,.1), 
+    0 1px 3px rgba(0,0,0,.3), 
+    0 3px 5px rgba(0,0,0,.2), 
+    0 5px 10px rgba(0,0,0,.25), 
+    0 10px 10px rgba(0,0,0,.2), 
+    0 20px 20px rgba(0,0,0,.15);
+}
 * {
 	margin: 0px;
 	padding: 0px;
 	user-select: none;
-	font-family: 'Balsamiq Sans', sans-serif;
+	/*font-family: 'Balsamiq Sans', sans-serif;*/
 	cursor: default;
 }
 
@@ -28,7 +46,8 @@ body {
 	color: #fff;
 	margin: 0px;
 	padding: 0px;
-	font-family: 'Balsamiq Sans', sans-serif;
+	/*font-family: 'Balsamiq Sans', sans-serif;*/
+	font-family: 'Helvetica', sans-serif;
 	background-color: var(--bg-color);
 	transition: 0.3s;
 }
@@ -60,13 +79,12 @@ body {
 }
 .addAcount_ .form {
 	display: flex;
-	width: 50%;
-	height: 30%;
+	width: 52%;
+	height: 18%;
 	justify-content: center;
 	align-items: center;
 	position: absolute;
 	z-index: 30;
-	padding: 40 30px;
 	.text {
 		margin-right: 10px;
 		height: 20px;
@@ -78,25 +96,49 @@ body {
 		width: 100%;
 		height: 40%;
 		justify-content: center;
+		margin-left: 2%;
 	}
-	.save_tok {
-		position: absolute;
+	.token_wrap {
 		display: flex;
-		width: 140px;
-		height: 30px;
-		margin-top: 30px;
-		margin-left: 0px;
-		justify-content: center;
-		align-items: center;
-		background: var(--bg-f);
-		border-radius: 50px;
-		.text {
-			margin-top: 1px;
-			margin-left: 5px;
+		width: 20px;
+		height: 100%;
+		.save_tok {
+			position: absolute;
+			display: flex;
+			width: 140px;
+			height: 30px;
+			margin-top: 5px;
+			margin-left: -136px;
+			justify-content: center;
+			align-items: center;
+			background: var(--bg-f);
+			border-radius: 50px;
+			z-index: 11;
+			.text {
+				margin-top: 1px;
+				margin-left: 5px;
+			}
 		}
 	}
+	.search2 {
+		width: 400px;
+		height: 24px;
+		color: var(--bg-color);
+		margin-top: 5px;
+		float: right;
+		border-radius: 50px;
+		position: relative;
+		transition: 0.3s;
+		z-index: 1;
+		outline: none;
+		border: none;
+		padding: 5px;
+		background: #E9EFF6;
+		border-width: 0;
+		font-weight: bold;
+	}
 	.feild {
-		width: 50%;
+		width: 70%;
 		height: 20px;
 		padding: 5px 20px;
 	}
@@ -310,11 +352,11 @@ ul, li {
 #header .chat-header-action {
 	width: 100%;
 	height: 100%;
-	position: absolute;
+	position: relative;
 	display: flex;
 	justify-content: flex-end;
 	margin-top: -20px;
-	margin-left: -20px;
+	margin-left: 20px;
 }
 .hidden {
 	display: none!important;
@@ -355,7 +397,7 @@ ul, li {
 .header_menu_wrap .settings_menu {
 	padding: 14px 16px 14px 12px;
 	max-width: 200px;
-	min-width: 120px;
+	min-width: 210px;
 	max-height: 300px;
 	display: flex;
 	text-align: left;
