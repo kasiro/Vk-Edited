@@ -78,14 +78,16 @@
 					<div class="text weight_bold">Выберете Диалог</div>
 				</div>
 				<Header
+					v-bind:status="status"
 					class="hidden"
 					@three-dots-header="HeaderUserDots"
+					@ClickOut="HeaderUserDots_close"
 				/>
 				<div class="header_menu_wrap">
 					<Main_menu
 						v-bind:items="Header_items"
 						@show-settings="Settings"
-						@change-theme="change_theme"
+						@notify-toggle="notify_toggle"
 					/>
 				</div>
 				<!-- <Chat />
@@ -121,6 +123,7 @@
 			return {
 				selectedId: 0,
 				Active_token: '',
+				status: 'Печатает...',
 				users: [],
 				items: [
 					{
@@ -143,7 +146,8 @@
 					{
 						name: 'Отключить уведомления',
 						icon: 'far fa-bell',
-						event: 'notify-off'
+						notify: true,
+						event: 'notify-toggle'
 					}
 				],
 				token_text: '',
@@ -190,11 +194,29 @@
 		async mounted() {
 			console.log('mounted');
 			this.Avatars_json = this.loadJson('Avatars.json');
+			if (this.updates)
+				this.notify('success', "Проверка обновлений включенна");
 			setInterval(() => {
 				if (this.updates){
 					this.update_chats();
 				}
 			}, 5000);
+
+			var check_Avatars = false;
+			if (check_Avatars){
+				this.notify('success', "Проверка Avatars.json на обновления включенна");
+				var last = this.loadJson('Avatars.json');
+				this.saveJson('Avatars_last.json', last);
+				setInterval(() => {
+					var last = this.loadJson('Avatars_last.json');
+					var current = this.loadJson('Avatars.json');
+					if (JSON.stringify(last) !== JSON.stringify(current)){
+						this.pageReload();
+					}
+				}, 5000);
+			} else {
+				this.notify("Проверка Avatars.json на обновления включенна");
+			}
 			
 			var preloadAvatar = true;
 			if (preloadAvatar === true){
@@ -282,6 +304,7 @@
 					document.querySelector('.hider').style.background = '#212121';
 					document.querySelector('.hider').style.opacity = 1;
 					this.hidePlaceholder();
+					this.notify('error', "Аккануты не найдены");
 				}
 				this.Active_token = '';
 				this.getToken();
@@ -307,6 +330,44 @@
 					avs[0].setAttribute("style", "margin-top: " + ot + `px; transition: ${time};`);
 				}
 			},
+			notify(method = '', text = ''){
+				var list = [
+					'default',
+					'success',
+					'info',
+					'warning',
+					'error'
+				];
+				if (!this.in_array(method.toLowerCase(), list)){
+					text = method;
+					method = '';
+				}
+				var toastConfig = {
+					position: "bottom-left",
+					timeout: 8000,
+					closeOnClick: true,
+					pauseOnFocusLoss: true,
+					pauseOnHover: true,
+					draggable: true,
+					draggablePercent: 0.47,
+					showCloseButtonOnHover: true,
+					hideProgressBar: false,
+					closeButton: "button",
+					icon: true,
+					rtl: false
+				};
+				if (method !== ''){
+					this.$toast[method](text, toastConfig);
+				} else {
+					this.$toast(text, toastConfig);
+				}
+			},
+			pageReload(){
+				window.location.reload();
+			},
+			notify_toggle(){
+				console.log('notify_toggle');
+			},
 			Close_token(){
 				document.querySelector('.addAcount_').style.display = 'none';
 			},
@@ -316,24 +377,46 @@
 			addAvatarRemove(obj){
 				
 			},
-			add_token() {
+			async add_token() {
 				if (this.token_text.length > 0){
 					var text = this.token_text;
-					var json = this.loadJson('users.json');
+					var users_json = this.loadJson('users.json');
 					var exist = false;
-					for (var el of json){
+					for (var el of users_json){
 						if (el.token == text){
 							var exist = true;
 							break;
 						}
 					}
 					if (exist == false){
-						this.token_text = '';
-						json.push({
-							token: text
+						var vk = new VK.VkRequest(text)
+						await vk.method('users.get', { fields: 'first_name, last_name' }).then(async (json) => {
+							var user = json.response[0];
+							var accaount = `${user.first_name} ${user.last_name}`;
+							this.token_text = '';
+							users_json.push({
+								token: text
+							});
+							this.saveJson('users.json', users_json);
+							this.notify('success', `Акканут: ${accaount} Добавлен!`);
+							await this.sleep(5000).then(() => window.location.reload());
+						}).catch({ name: 'VkApiError' }, error => {
+							this.notify('error', `VKApi: ${error.error_msg}`);
+							console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
+							switch(error.error_code) {
+									case 14:
+											console.log('Captcha error');
+									break;  
+									case 5:
+											console.log('No auth');
+									break;
+									default:
+										console.log(error.error_msg);
+							}
+						}).catch(error => {
+							this.notify('error', error);
+							console.log(`Other error ${error}`);
 						});
-						this.saveJson('users.json', json);
-						window.location.reload();
 					} else {
 
 					}
@@ -457,7 +540,6 @@
 				document.querySelector('.settings').style.display = 'flex';
 			},
 			Settings_menu_close(){
-				// v-click-outside="Settings_menu_close"
 				if (this.settings_menu == 'close' && this.settings_menu_last != 'menu_list_item'){
 					var settings_menu = document.querySelector('.menu_wrap .settings_menu');
 					settings_menu.style.opacity = 0;
@@ -497,12 +579,21 @@
 					console.log('close menu')
 				}
 			},
+			HeaderUserDots_close(){
+				if (this.header_settings_menu == 'close' && this.header_settings_menu_last != 'menu_list_item'){
+					var header_settings_menu = document.querySelector('.header_menu_wrap .settings_menu');
+					header_settings_menu.style.opacity = 0;
+					header_settings_menu.style.display = 'none';
+					this.header_settings_menu = 'open';
+				}
+			},
 			async openChat(user_id){
 				var HedAvatar = document.querySelector('.avatar img');
 				var HedName = document.querySelector('h5');
+				var status = document.querySelector('.status i');
 
 				var vk = new VK.VkRequest(this.Active_token);
-				await vk.method('users.get', { user_ids: user_id, fields: 'photo_200, first_name, last_name' }).then(json => {
+				await vk.method('users.get', { user_ids: user_id, fields: 'sex, photo_200, first_name, last_name' }).then(json => {
 					var User = json.response[0];
 					if (this.avatarFilter(user_id) !== false){
 						var img_link = this.avatarFilter(user_id);
@@ -511,6 +602,8 @@
 					}
 					HedAvatar.setAttribute('src', img_link);
 					HedName.textContent = `${User.first_name} ${User.last_name}`;
+					var sex = User.sex == 1 ? 'Была' : 'Был';
+					global.sex = sex;
 				}).catch({ name: 'VkApiError' }, error => {
 					console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
 					switch(error.error_code) {
@@ -529,9 +622,92 @@
 				
 				// статус онлайна (0|1)
 				// Статус времени когда был последний раз в сети (timestamp)
-				// this.VkMethod('messages.getLastActivity', { user_ids: user_id }, (json) => {
-					
-				// });
+				await vk.method('messages.getLastActivity', { user_id: user_id }).then(async (json) => {
+					// await vk.method('users.get', { user_ids: user_id, fields: 'sex' }).then(json => {
+					// 	var User = json.response[0];
+					// 	if (this.avatarFilter(user_id) !== false){
+					// 		var img_link = this.avatarFilter(user_id);
+					// 	} else {
+					// 		var img_link = User.photo_200;
+					// 	}
+					// 	HedAvatar.setAttribute('src', img_link);
+					// 	HedName.textContent = `${User.first_name} ${User.last_name}`;
+					// }).catch({ name: 'VkApiError' }, error => {
+					// 	console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
+					// 	switch(error.error_code) {
+					// 			case 14:
+					// 					console.log('Captcha error');
+					// 			break;  
+					// 			case 5:
+					// 					console.log('No auth');
+					// 			break;
+					// 			default:
+					// 				console.log(error.error_msg);
+					// 	}
+					// }).catch(error => {
+					// 	console.log(`Other error ${error}`);
+					// });
+					global.sex;
+					var online = json.response.online;
+					var dt = new Date();
+					var dt_timestamp = dt.getTime();
+					var timestamp = json.response.time;
+					if (online == 1){
+						this.status = 'Онлайн';
+					} else {
+						// this.status = 'не Онлайн';
+						if (timestamp < dt_timestamp){
+							var mode = 'Messenger'; // Messenger || Site;
+							var cur_timestamp = dt_timestamp - timestamp;
+							const date1 = new Date();
+							const date2 = new Date(timestamp*1000);
+							const diffTime = Math.abs(date2 - date1);
+							var dateString = (new Date(timestamp*1000).toLocaleString());
+							var els = dateString.split(', ')[1].split(':');
+							var time = els[0] + ':' + els[1];
+							const diffSeconds = Math.ceil(diffTime / 1000);
+							const diffMinutes = Math.ceil(diffTime / 1000 / 60);
+							const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
+							const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+							console.log(dateString)
+							// console.log(diffSeconds + " Seconds");
+							// console.log(diffMinutes + " Minutes");
+							console.log(diffHours + " Hours");
+							console.log(diffDays + " days");
+							var endResult = '';
+							var gender = sex;
+							if (mode == 'Messenger'){
+								var tdate1 = date1.toLocaleString().split(', ')[0];
+								var tdate2 = dateString.toLocaleString().split(', ')[0];
+								if (diffDays == 1 && tdate1 != tdate2){
+									endResult = `${gender} Вчера в ${time}`;
+								} else {
+									endResult = `${gender} в ${time}`;
+								}
+							} else {
+								if (diffDays == 1){
+									endResult = `${gender} в сети ${diffHours} часа назад`;
+								}
+							}
+							this.status = endResult;
+						}
+					}
+				}).catch({ name: 'VkApiError' }, error => {
+					console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
+					switch(error.error_code) {
+							case 14:
+									console.log('Captcha error');
+							break;  
+							case 5:
+									console.log('No auth');
+							break;
+							default:
+								console.log(error.error_msg);
+					}
+				}).catch(error => {
+					console.log(`Other error ${error}`);
+				});
+
 				var banner = document.querySelector('.banner');
 				if (!('hidden' in banner.classList)){
 					banner.classList.add('hidden');

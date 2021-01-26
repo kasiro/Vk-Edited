@@ -5,13 +5,22 @@ import App from './App'
 import router from './router'
 import store from './store'
 
+import '@fortawesome/fontawesome-free/css/all.min.css';
+
 import { directive as onClickaway } from 'vue-clickaway'
 Vue.directive('on-clickaway', onClickaway)
 
 import ClickOutside from 'vue-click-outside'
 Vue.directive('click-outside', ClickOutside)
 
-require('/home/kasiro/Документы/js/elvue-test/node_modules/@fortawesome/fontawesome-free/css/all.min.css')
+import Toast from "vue-toastification";
+import "vue-toastification/dist/index.css";
+
+Vue.use(Toast, {
+  transition: "Vue-Toastification__bounce",
+  maxToasts: 8,
+  newestOnTop: true
+});
 
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.http = Vue.prototype.$http = axios

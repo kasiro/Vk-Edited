@@ -17,7 +17,7 @@
 				</div>
 				<div class="last_message_and_count" v-bind:class="{ myhover: !selected }">
 					<div class="user_last_message" v-bind:class="{ weight_bold: fromviod, myhover: !selected }">
-						<span v-if="user.from.length > 0" class="from">{{ user.from }}: </span>
+						<span v-show="user.from.length > 0" class="from">{{ user.from }}: </span>
 						{{ user.text }}
 					</div>
 				</div>

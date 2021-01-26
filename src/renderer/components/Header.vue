@@ -10,13 +10,14 @@
 			<div>
 				<h5 class="name weight_bold">Кто то</h5>
 				<small class="status">
-					<i>Печатает...</i>
+					<i>{{ status }}</i>
 				</small>
 			</div>
 		</div>
 		<div class="chat-header-action">
 			<ThreeDots
 				@three-dots="ThreeDots"
+				v-click-outside="ClickOut"
 			/>
 		</div>
 	</div>
@@ -25,6 +26,7 @@
 <script>
 	import ThreeDots from '@/components/ThreeDots'
 	export default {
+		props: ['status'],
 		components: {
 			ThreeDots
 		},
@@ -34,6 +36,9 @@
 			},
 			onRightClick(){
 				console.log('onRightClick');
+			},
+			ClickOut(){
+				this.$emit('ClickOut')
 			}
 		}
 	}
