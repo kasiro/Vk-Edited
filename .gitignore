@@ -9,7 +9,6 @@ node_modules/*
 .electron-vue/*
 build/*
 dist/*
-src/renderer/token.txt
 src/renderer/*.json
 src/renderer/prepros.config
 webpack.config.js
