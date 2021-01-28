@@ -4,7 +4,34 @@
 .fade-enter, .fade-leave-to /* .fade-leave-active до версии 2.1.8 */ {
   opacity: 0;
 }
+
+.mainanim-enter-active, .mainanim-leave-active {
+  animation: main-in 5s;
+}
+.mainanim-enter, .mainanim-leave-to {
+  animation: main-in 5s reverse;
+}
+
+
+/*.mainanim-enter-active {
+	animation: main .5s;
+}
+.mainanim-leave-active {
+	animation: main .5s reverse;
+}*/
+@keyframes main-in {
+	0% {
+		transform: scale(0);
+	}
+	50% {
+		transform: scale(1.5);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
 :root #app[data-mode=dark] {
+	--general-color: #5C63E0;
 	--bg-color: #212121;
 	--bg-lighten: #323232;
 	--bg-f: #424242;
@@ -66,6 +93,109 @@ body {
 
 ::-webkit-scrollbar-track {
 	background: #00000000;
+}
+
+#chat {
+	width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+}
+.When {
+	display: flex;
+    height: 30px;
+    width: 100%;
+    position: relative;
+    /*margin-left: -215px;*/
+    justify-content: center;
+    margin-top: 3%;
+}
+.When div {
+	height: 18px;
+    width: 70px;
+	font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 50px;
+    background: #323232;
+}
+.region {
+	position: absolute;
+	flex-direction: column;
+	display: flex;
+	width: 100%;
+	height: 100%;
+}
+.message {
+	display: flex;
+	min-width: 200px;
+    max-width: 300px;
+	margin-left: 10px;
+	padding: 7px;
+	border-radius: 20px;
+	&:first-child {
+		margin-top: 47px;
+	}
+}
+.message .user_last_message {
+	margin-top: 3px;
+	font-weight: bold;
+}
+.message .description {
+	background: #323232;
+	padding: 10px;
+	border-top-left-radius: 5px!important;
+	border-radius: 15px;
+	border: 4px solid transparent;
+}
+.message .description_me {
+	background: #1D1D1D;
+	padding: 10px;
+	flex: 2;
+	border-top-left-radius: 5px!important;
+	border-radius: 15px;
+	border: 3px solid #323232;
+}
+.message .name {
+	
+}
+.message .user_name span {
+	color: #ccc;
+	flex: 0.3;
+	font-weight: 300;
+	font-size: 14px;
+	margin-left: 5px;
+}
+.ActiveStatus {
+	width: 10px;
+    height: 10px;
+    position: relative;
+    z-index: 9;
+}
+#app[data-mode=dark] .selected .ActiveStatus.comp {
+	border: 2px solid #1D1D1D;
+}
+#app[data-mode=dark] .ActiveStatus.comp {
+	margin-left: 21px;
+    margin-top: -12px;
+	border: 2px solid #323232;
+    background: var(--general-color);
+    border-radius: 50px;
+    transition: all 400ms;
+}
+#app[data-mode=dark] .ActiveStatus.tel {
+	margin-left: 23px;
+    margin-top: -15px;
+	font-size: 15px;
+	background: #323232;
+	color: var(--general-color);
+	border-radius: 10px;
+}
+#app[data-mode=dark] .ActiveStatus.unread {
+	width: 8px;
+	height: 8px;
+	background: var(--general-color);
+    border-radius: 50px;
 }
 .addAcount_ {
 	display: flex;
@@ -254,6 +384,9 @@ body {
 }
 .chat-header-user {
 	.name {
+		width: 400px;
+	}
+	div {
 		width: 400px;
 	}
 }
@@ -493,7 +626,7 @@ ul, li {
 	position: absolute;
 	margin-left: 22px;
 	border-radius: 50%;
-	background-color: var(--bg-lighten);
+	background-color: transparent;
 	color: #fff;
 }
 #header .three-dots {
@@ -604,8 +737,11 @@ ul, li {
 	padding: 13px;
 	background-color: var(--bg-lighten);
 	border-radius: 20px;
-	transition: all 400ms; 
+	transition: all 400ms;
 	border: 4px solid transparent;
+}
+.user * {
+	cursor: pointer!important;
 }
 #app[data-mode=light] .user {
 	box-shadow: 0 0 5px 1px;
@@ -634,17 +770,21 @@ ul, li {
 	border-radius: 50%;
 }
 
-/* Блок с именем пользователя и с последним сообщением и еще с датой и количеством*/
+/* Блок с именем пользователя и с последним сообщением и еще с датой и количеством */
 .description {
 	display: flex;
 	flex: 2;
 }
 
 /* Блок в котором содержится имя пользователя и дата посленего онлайна*/
-.user_name{display: flex;}
+.user_name {
+	display: flex;
+}
 
 /* Имя пользователя*/
-.name{flex: 2;}
+.user .name {
+	flex: 2;
+}
 
 /* Дата последнего посещения */
 .name span {
@@ -682,7 +822,7 @@ ul, li {
 .count span {
 	border-radius: 18px;
 	background: #444444;
-	padding: 5px 8px;
+	padding: 5px 9px;
 	font-size: 13px;
 	text-align: right;
 }

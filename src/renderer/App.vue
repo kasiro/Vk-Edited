@@ -8,7 +8,7 @@
 				<div class="text">Данные загружаются</div>
 			</div>
 		</div>
-		<div class="addAcount_" style="display: none;">
+		<div class="addAcount_" v-show="addAcount_show">
 			<form class="form bg round-15">
 				<div class="first">
 					<div class="text">token: </div>
@@ -31,13 +31,15 @@
 				</div>
 			</form>
 		</div>
-		<div class="menu_wrap">
-			<Main_menu
-				v-bind:items="items"
-				@show-settings="Settings"
-				@change-theme="change_theme"
-			/>
-		</div>
+		<transition name="fade">
+			<div class="menu_wrap" v-show="settings_menu_show">
+				<Main_menu
+					:items="items"
+					@show-settings="Settings"
+					@change-theme="change_theme"
+				/>
+			</div>
+		</transition>
 		<div class="hider" style="display: none;"></div>
 		<div class="settings" style="display: none;">
 			<span class="setText weight_bold">Настройки</span>
@@ -58,7 +60,7 @@
 			@settings="Settings_menu"
 			@click-out="Settings_menu_close"
 			@select-accs="select_accs"
-			v-bind:Accs_users="Accs_users"
+			:Accs_users="Accs_users"
 		/>
 		<div class="list">
 			<labelSearch
@@ -68,7 +70,7 @@
 				@search-enter="search_enter"
 			/>
 			<Users
-				v-bind:users="users"
+				:users="users"
 				@select-chat="selectChat"
 			/>
 		</div>
@@ -83,15 +85,17 @@
 					@three-dots-header="HeaderUserDots"
 					@ClickOut="HeaderUserDots_close"
 				/>
-				<div class="header_menu_wrap">
+				<div class="header_menu_wrap" v-if="header_menu_show">
 					<Main_menu
-						v-bind:items="Header_items"
+						:items="Header_items"
 						@show-settings="Settings"
 						@notify-toggle="notify_toggle"
 					/>
 				</div>
-				<!-- <Chat />
-				<Sender /> -->
+				<Chat
+					v-show="Chat_show"
+				/>
+				<!-- <Sender /> -->
 			</div>
 		</div>
 	</div>
@@ -104,7 +108,7 @@
 	import Header from '@/components/Header'
 	import Main_menu from '@/components/menu'
 	import settings_menu from '@/components/settings_menu'
-	// import Chat from '@/components/Chat'
+	import Chat from '@/components/Chat'
 	// import Sender from '@/components/Sender'
 	import VK from 'vk-api-help'
 	// import token from 'raw-loader!./token.txt'
@@ -116,14 +120,22 @@
 			labelSearch,
 			Users,
 			Header,
+			Chat,
 			Main_menu,
 			settings_menu
 		},
 		data() {
 			return {
 				selectedId: 0,
+				UserId: 0,
 				Active_token: '',
+				// searchtext: '',
 				status: 'Печатает...',
+				addAcount_show: false,
+				settings_menu_show: false,
+				header_menu_show: false,
+				settings_show: false,
+				Chat_show: false,
 				users: [],
 				items: [
 					{
@@ -194,8 +206,9 @@
 		async mounted() {
 			console.log('mounted');
 			this.Avatars_json = this.loadJson('Avatars.json');
-			if (this.updates)
-				this.notify('success', "Проверка обновлений включенна");
+			if (this.updates){
+				// this.notify('success', "Проверка обновлений включенна");
+			}
 			setInterval(() => {
 				if (this.updates){
 					this.update_chats();
@@ -204,22 +217,54 @@
 
 			var check_Avatars = false;
 			if (check_Avatars){
-				this.notify('success', "Проверка Avatars.json на обновления включенна");
+				// this.notify('success', "Проверка Avatars.json на обновления включенна");
 				var last = this.loadJson('Avatars.json');
 				this.saveJson('Avatars_last.json', last);
 				setInterval(() => {
 					var last = this.loadJson('Avatars_last.json');
 					var current = this.loadJson('Avatars.json');
 					if (JSON.stringify(last) !== JSON.stringify(current)){
-						this.pageReload();
+						this.notify('success', "Avatars.json Изменён");
+						this.ReloadAvatars();
+						var current = this.loadJson('Avatars.json');
+						this.saveJson('Avatars_last.json', current);
 					}
 				}, 5000);
 			} else {
-				this.notify("Проверка Avatars.json на обновления включенна");
+				// this.notify("Проверка Avatars.json на обновления включенна");
 			}
 			
 			var preloadAvatar = true;
 			if (preloadAvatar === true){
+				this.preloadAvatar();
+			}
+		},
+		methods: {
+			loaded(){
+				var time = '0.5s';
+				var avs = document.querySelectorAll('[class="acAvatar"]');
+				if (avs.length > 1){
+					var ot = 10;
+					var p = 50;
+					var i = 1;
+					for (let av of avs){
+						av.setAttribute("style", "margin-top: " + ot + `px; transition: ${time};`);
+						ot += p;
+						i++;
+					}
+				} else {
+					var ot = 10;
+					avs[0].setAttribute("style", "margin-top: " + ot + `px; transition: ${time};`);
+				}
+			},
+			async ReloadAvatars(){
+				await this.preloadAvatar();
+				await this.update_chats();
+				if (this.selectedId != 0){
+					this.update_Header_Avatar();
+				}
+			},
+			async preloadAvatar(){
 				var users_json = this.loadJson('users.json');
 				var arr = [];
 				global.arr;
@@ -232,6 +277,7 @@
 							var vk = new VK.VkRequest(this.Active_token)
 							await vk.method('users.get', { fields: 'photo_200, id' }).then((json) => {
 								var user = json.response[0];
+								this.UserId = user.id;
 								global.arr;
 								if (this.avatarFilter(user.id) !== false){
 									arr.push({
@@ -269,6 +315,7 @@
 						await vk.method('users.get', { fields: 'photo_200, id' }).then((json) => {
 							var user = json.response[0];
 							global.arr;
+							this.UserId = user.id;
 							if (this.avatarFilter(user.id) !== false){
 								arr.push({
 									img: this.avatarFilter(user.id),
@@ -310,25 +357,6 @@
 				this.getToken();
 				this.Accs_users = arr;
 				console.log(this.Accs_users);
-			}
-		},
-		methods: {
-			loaded(){
-				var time = '0.5s';
-				var avs = document.querySelectorAll('[class="acAvatar"]');
-				if (avs.length > 1){
-					var ot = 10;
-					var p = 50;
-					var i = 1;
-					for (let av of avs){
-						av.setAttribute("style", "margin-top: " + ot + `px; transition: ${time};`);
-						ot += p;
-						i++;
-					}
-				} else {
-					var ot = 10;
-					avs[0].setAttribute("style", "margin-top: " + ot + `px; transition: ${time};`);
-				}
 			},
 			notify(method = '', text = ''){
 				var list = [
@@ -369,10 +397,12 @@
 				console.log('notify_toggle');
 			},
 			Close_token(){
-				document.querySelector('.addAcount_').style.display = 'none';
+				this.addAcount_show = false;
+				// document.querySelector('.addAcount_').style.display = 'none';
 			},
 			addAcount() {
-				document.querySelector('.addAcount_').style.display = 'flex';
+				this.addAcount_show = true;
+				// document.querySelector('.addAcount_').style.display = 'flex';
 			},
 			addAvatarRemove(obj){
 				
@@ -454,13 +484,16 @@
 				if (!this.in_array('hidden', header.classList)){
 					header.classList.add('hidden');
 				}
+				this.Chat_show = false;
 				var Accs = this.Accs_users;
-				for (var el of Accs){
-					if (el.id == user_id){
-						this.Active_token = el.token;
+				if (Accs.length > 1){
+					for (var el of Accs){
+						if (el.id == user_id){
+							this.Active_token = el.token;
+						}
 					}
+					this.load_chats();
 				}
-				this.load_chats();
 				this.selectedId = 0;
 				// console.log(user_id, this.Active_token);
 			},
@@ -541,39 +574,44 @@
 			},
 			Settings_menu_close(){
 				if (this.settings_menu == 'close' && this.settings_menu_last != 'menu_list_item'){
-					var settings_menu = document.querySelector('.menu_wrap .settings_menu');
-					settings_menu.style.opacity = 0;
-					settings_menu.style.display = 'none';
+					// var settings_menu = document.querySelector('.menu_wrap .settings_menu');
+					// settings_menu.style.opacity = 0;
+					// settings_menu.style.display = 'none';
+					this.settings_menu_show = false;
 					this.settings_menu = 'open';
 				}
 			},
 			Settings_menu(){
-				var settings_menu = document.querySelector('.menu_wrap .settings_menu');
+				// var settings_menu = document.querySelector('.menu_wrap .settings_menu');
 				if (this.settings_menu == 'open'){
-					settings_menu.style.display = 'flex';
-					settings_menu.style.opacity = 1;
-					settings_menu.style.display = 'flex';
+					// settings_menu.style.display = 'flex';
+					// settings_menu.style.opacity = 1;
+					// settings_menu.style.display = 'flex';
+					this.settings_menu_show = true;
 					this.settings_menu = 'close';
 					this.settings_menu_last = 'menu';
 				} else {
-					settings_menu.style.opacity = 0;
-					settings_menu.style.display = 'none';
+					// settings_menu.style.opacity = 0;
+					// settings_menu.style.display = 'none';
+					this.settings_menu_show = false;
 					this.settings_menu = 'open';
 					this.settings_menu_last = 'menu';
 				}
 			},
 			HeaderUserDots(){
-				var settings_menu = document.querySelector('.header_menu_wrap .settings_menu');
+				// var settings_menu = document.querySelector('.header_menu_wrap .settings_menu');
 				if (this.header_settings_menu == 'open'){
-					settings_menu.style.display = 'flex';
-					settings_menu.style.opacity = 1;
-					settings_menu.style.display = 'flex';
+					// settings_menu.style.display = 'flex';
+					// settings_menu.style.opacity = 1;
+					// settings_menu.style.display = 'flex';
+					this.header_menu_show = true;
 					this.header_settings_menu = 'close';
 					this.header_settings_menu_last = 'menu';
 					console.log('open menu')
 				} else {
-					settings_menu.style.opacity = 0;
-					settings_menu.style.display = 'none';
+					// settings_menu.style.opacity = 0;
+					// settings_menu.style.display = 'none';
+					this.header_menu_show = false;
 					this.header_settings_menu = 'open';
 					this.header_settings_menu_last = 'menu';
 					console.log('close menu')
@@ -581,11 +619,47 @@
 			},
 			HeaderUserDots_close(){
 				if (this.header_settings_menu == 'close' && this.header_settings_menu_last != 'menu_list_item'){
-					var header_settings_menu = document.querySelector('.header_menu_wrap .settings_menu');
-					header_settings_menu.style.opacity = 0;
-					header_settings_menu.style.display = 'none';
+					// var header_settings_menu = document.querySelector('.header_menu_wrap .settings_menu');
+					// header_settings_menu.style.opacity = 0;
+					// header_settings_menu.style.display = 'none';
+					this.header_menu_show = false;
 					this.header_settings_menu = 'open';
 				}
+			},
+			async update_Header_Avatar(){
+				var user_id = this.selectedId;
+
+				var HedAvatar = document.querySelector('.avatar img');
+				var HedName = document.querySelector('h5');
+				var status = document.querySelector('.status i');
+
+				var vk = new VK.VkRequest(this.Active_token);
+				await vk.method('users.get', { user_ids: user_id, fields: 'sex, photo_200, first_name, last_name' }).then(json => {
+					var User = json.response[0];
+					if (this.avatarFilter(user_id) !== false){
+						var img_link = this.avatarFilter(user_id);
+					} else {
+						var img_link = User.photo_200;
+					}
+					HedAvatar.setAttribute('src', img_link);
+					HedName.textContent = `${User.first_name} ${User.last_name}`;
+					var sex = User.sex == 1 ? 'Была' : 'Был';
+					global.sex = sex;
+				}).catch({ name: 'VkApiError' }, error => {
+					console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
+					switch(error.error_code) {
+							case 14:
+									console.log('Captcha error');
+							break;  
+							case 5:
+									console.log('No auth');
+							break;
+							default:
+								console.log(error.error_msg);
+					}
+				}).catch(error => {
+					console.log(`Other error ${error}`);
+				});
 			},
 			async openChat(user_id){
 				var HedAvatar = document.querySelector('.avatar img');
@@ -619,48 +693,24 @@
 				}).catch(error => {
 					console.log(`Other error ${error}`);
 				});
-				
+				this.Chat_show = true;
 				// статус онлайна (0|1)
 				// Статус времени когда был последний раз в сети (timestamp)
 				await vk.method('messages.getLastActivity', { user_id: user_id }).then(async (json) => {
-					// await vk.method('users.get', { user_ids: user_id, fields: 'sex' }).then(json => {
-					// 	var User = json.response[0];
-					// 	if (this.avatarFilter(user_id) !== false){
-					// 		var img_link = this.avatarFilter(user_id);
-					// 	} else {
-					// 		var img_link = User.photo_200;
-					// 	}
-					// 	HedAvatar.setAttribute('src', img_link);
-					// 	HedName.textContent = `${User.first_name} ${User.last_name}`;
-					// }).catch({ name: 'VkApiError' }, error => {
-					// 	console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
-					// 	switch(error.error_code) {
-					// 			case 14:
-					// 					console.log('Captcha error');
-					// 			break;  
-					// 			case 5:
-					// 					console.log('No auth');
-					// 			break;
-					// 			default:
-					// 				console.log(error.error_msg);
-					// 	}
-					// }).catch(error => {
-					// 	console.log(`Other error ${error}`);
-					// });
 					global.sex;
 					var online = json.response.online;
 					var dt = new Date();
 					var dt_timestamp = dt.getTime();
 					var timestamp = json.response.time;
 					if (online == 1){
-						this.status = 'Онлайн';
+						this.status = 'онлайн';
 					} else {
 						// this.status = 'не Онлайн';
 						if (timestamp < dt_timestamp){
 							var mode = 'Messenger'; // Messenger || Site;
 							var cur_timestamp = dt_timestamp - timestamp;
-							const date1 = new Date();
-							const date2 = new Date(timestamp*1000);
+							let date1 = new Date();
+							let date2 = new Date(timestamp*1000);
 							const diffTime = Math.abs(date2 - date1);
 							var dateString = (new Date(timestamp*1000).toLocaleString());
 							var els = dateString.split(', ')[1].split(':');
@@ -672,6 +722,7 @@
 							console.log(dateString)
 							// console.log(diffSeconds + " Seconds");
 							// console.log(diffMinutes + " Minutes");
+							
 							console.log(diffHours + " Hours");
 							console.log(diffDays + " days");
 							var endResult = '';
@@ -680,9 +731,97 @@
 								var tdate1 = date1.toLocaleString().split(', ')[0];
 								var tdate2 = dateString.toLocaleString().split(', ')[0];
 								if (diffDays == 1 && tdate1 != tdate2){
-									endResult = `${gender} Вчера в ${time}`;
-								} else {
-									endResult = `${gender} в ${time}`;
+									endResult = `${gender} в сети Вчера в ${time}`;
+								} else if (tdate1 == tdate2) {
+									endResult = `${gender} в сети сегодня в ${time}`;
+								} else if (diffDays > 1 && tdate1 != tdate2) {
+									var date = date2.toLocaleString().split(', ')[0];
+									var tdate = parseInt(date1.toLocaleString().split(', ')[0].split('.')[2]);
+									var sp = date.split('.');
+									var day = parseInt(sp[0]);
+									var month = parseInt(sp[1]);
+									var year = parseInt(sp[2]);
+									// console.log(year + ' ' + tdate)
+									if (year == tdate){
+										switch(month){
+											case 1:
+												var date = `${day} Января`;
+											break;
+											case 2:
+												var date = `${day} Февраля`;
+											break;
+											case 3:
+												var date = `${day} Марта`;
+											break;
+											case 4:
+												var date = `${day} Апреля`;
+											break;
+											case 5:
+												var date = `${day} Майя`;
+											break;
+											case 6:
+												var date = `${day} Июня`;
+											break;
+											case 7:
+												var date = `${day} Июля`;
+											break;
+											case 8:
+												var date = `${day} Августа`;
+											break;
+											case 9:
+												var date = `${day} Сентября`;
+											break;
+											case 10:
+												var date = `${day} Октября`;
+											break;
+											case 11:
+												var date = `${day} Ноября`;
+											break;
+											case 12:
+												var date = `${day} Декабря`;
+											break;
+										}
+									} else {
+										switch(month){
+											case 1:
+												var date = `${day} Января ${year}`;
+											break;
+											case 2:
+												var date = `${day} Февраля ${year}`;
+											break;
+											case 3:
+												var date = `${day} Марта ${year}`;
+											break;
+											case 4:
+												var date = `${day} Апреля ${year}`;
+											break;
+											case 5:
+												var date = `${day} Майя ${year}`;
+											break;
+											case 6:
+												var date = `${day} Июня ${year}`;
+											break;
+											case 7:
+												var date = `${day} Июля ${year}`;
+											break;
+											case 8:
+												var date = `${day} Августа ${year}`;
+											break;
+											case 9:
+												var date = `${day} Сентября ${year}`;
+											break;
+											case 10:
+												var date = `${day} Октября ${year}`;
+											break;
+											case 11:
+												var date = `${day} Ноября ${year}`;
+											break;
+											case 12:
+												var date = `${day} Декабря ${year}`;
+											break;
+										}
+									}
+									endResult = `${gender} в сети ${date} в ${time}`;
 								}
 							} else {
 								if (diffDays == 1){
@@ -741,6 +880,7 @@
 					fe.style.paddingLeft = '5px';
 					si.classList.remove('search-icon-full');
 
+					// this.$store.dispatch('setSearchText', '');
 					this.Search_action = 'open';
 					this.Search_action_last = 'SearchOut';
 				}
@@ -770,6 +910,7 @@
 					this.Search_action = 'close';
 					this.Search_action_last = 'close';
 				} else {
+					// this.search_enter(text);
 					this.search_enter(text);
 				}
 			},
@@ -827,7 +968,7 @@
 					fields: 'photo_200',
 					extended: 1
 				}).then( async (json) => {
-					// console.log(json);
+					console.log(json);
 					// console.log(json.response.items[0]);
 					await this.addUsers(json);
 					this.hidePlaceholder();
@@ -857,18 +998,17 @@
 					document.querySelector('#placeholder').style.display = 'none';
 				});
 			},
-			update_chats(){
+			async update_chats(){
 				const token = this.getToken();
 				var vk = new VK.VkRequest(token)
-				vk.method('messages.getConversations', {
+				await vk.method('messages.getConversations', {
 					offset: 0,
 					count: 100,
 					filter: 'all',
 					fields: 'photo_200',
 					extended: 1
-				}).then(json => {
-					// console.log(json);
-					// console.log(json.response.items[0]);
+				}).then((json) => {
+					// console.log('this.UserId:', this.UserId);
 					this.addUsers(json);
 				}).catch({ name: 'VkApiError' }, error => {
 					console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
@@ -901,7 +1041,7 @@
 				let rand = min + Math.random() * (max + 1 - min);
 				return Math.floor(rand);
 			},
-			addUsers(json){
+			async addUsers(json){
 				var curent_user;
 				var profile;
 				var CUsers = [];
@@ -910,18 +1050,78 @@
 					for (profile of json.response.profiles){
 						if (curent_user.conversation.peer.type == 'user'){
 							if (curent_user.conversation.peer.id == profile.id){
-
-								if (curent_user.last_message.out == 1){
-									var from_me = true;
-								} else {
-									var from_me = false;
-								}
+								var id = curent_user.last_message.peer_id;
+								var last_message_id = curent_user.conversation.last_message_id;
+								var out_read = curent_user.conversation.out_read;
+								var unread = last_message_id !== out_read ? true : false;
 
 								if (profile.first_name == 'Администрация ВКонтакте'){
 									var full_name = profile.first_name.split(' ')[0];
 								} else {
 									var full_name = `${profile.first_name} ${profile.last_name}`;
 								}
+
+								var full_online = false;
+								var vk = new VK.VkRequest(this.Active_token)
+								await vk.method('users.get', { user_ids: id, fields: 'online' }).then(json => {
+									var User = json.response[0];
+									var online = false;
+									var online_mobile = false;
+
+									if (User.online){
+										online = true;
+										if (User.online_mobile){
+											online_mobile = true;
+										}
+									}
+									global.online = online;
+									global.online_mobile = online_mobile;
+								}).catch({ name: 'VkApiError' }, error => {
+									console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
+									switch(error.error_code) {
+											case 14:
+													console.log('Captcha error');
+											break;  
+											case 5:
+													console.log('No auth');
+											break;
+											default:
+												console.log(error.error_msg);
+									}
+								}).catch(error => {
+									console.log(`Other error ${error}`);
+								});
+								global.online;
+								global.online_mobile;
+								
+								if (online == false && online_mobile == false){
+									full_online = false;
+								} else {
+									full_online = true;
+								}
+
+								if (full_online){
+									if (online_mobile){
+										var online_type = 'mobile';
+									} else if (online){
+										var online_type = 'online';
+									}
+								}
+
+								if (id == this.UserId){
+									var full_online = true;
+									var online_type = 'online';
+								}
+
+								online_type = online_type == 'online' ? true : false;
+								
+								if (curent_user.last_message.out == 1){
+									var from_me = true;
+								} else {
+									var from_me = false;
+								}
+
+								
 								
 								if (curent_user.conversation.unread_count != undefined){
 									var count = curent_user.conversation.unread_count;
@@ -1059,7 +1259,6 @@
 									}
 								}
 
-								var id = curent_user.last_message.peer_id;
 								if (this.avatarFilter(id) !== false){
 									var img_link = this.avatarFilter(id);
 								} else {
@@ -1186,10 +1385,13 @@
 								} else {
 									var TSel = false;
 								}
-								
+
 								CUsers.push({
 									selected: TSel,
 									type: 'user',
+									unread: unread,
+									online: full_online,
+									online_type: online_type,
 									element_id: element_id,
 									from_me: from_me,
 									id: id,
@@ -1214,4 +1416,6 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
 @import 'css/main.css';
+/*@import 'css/dark.css';*/
+/*@import 'css/light.css';*/
 </style>

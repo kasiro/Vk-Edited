@@ -2,7 +2,7 @@
 	<div id="myAccs">
 		<Account
 			v-for="Acc in Accs_users"
-			v-bind:Acc="Acc"
+			:Acc="Acc"
 			@select-accs="select_accs"
 		/>
 		<div class="acAvatar">

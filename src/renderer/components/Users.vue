@@ -2,13 +2,15 @@
 <div id="users">
 	<User
 		v-for="user in users"
-		v-bind:selected="user.selected"
-		v-bind:fromviod="user.from.length == 0"
-		v-bind:IsUser="user.type == 'user' || user.type == 'group'"
-		v-bind:IsConv="user.type == 'Conversation'"
-		v-bind:IsGroup="user.type == 'group'"
-		v-bind:user="user"
-		v-bind:selectedId="selectedId"
+		:selected="user.selected"
+		:isOnline="user.online"
+		:online_type="user.online_type"
+		:fromviod="user.from.length == 0"
+		:IsUser="user.type == 'user' || user.type == 'group'"
+		:IsConv="user.type == 'Conversation'"
+		:IsGroup="user.type == 'group'"
+		:user="user"
+		:selectedId="selectedId"
 		@select-chat="selectChat(user)"
 	/>
 	<div class="block-stabilization"></div>

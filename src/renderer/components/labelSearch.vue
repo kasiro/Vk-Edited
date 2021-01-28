@@ -14,6 +14,7 @@
 </template>
 
 <script>
+	// import {mapGetters} from 'vuex'
 	import SearchButton from '@/components/SearchButton'
 	export default {
 		components: {
@@ -24,6 +25,7 @@
 				searchtext: ''
 			}
 		},
+		// computed: mapGetters(['getText']),
 		methods: {
 			Search(){
 				var text = this.searchtext.trim();
