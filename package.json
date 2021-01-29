@@ -53,6 +53,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.15.1",
     "axios": "^0.18.0",
+    "easyvk": "^2.8.2",
     "vk-api-help": "^2.0.0",
     "vk-io": "^4.1.2",
     "vue": "^2.5.16",

@@ -80,7 +80,7 @@
 					<div class="text weight_bold">Выберете Диалог</div>
 				</div>
 				<Header
-					v-bind:status="status"
+					:status="status"
 					class="hidden"
 					@three-dots-header="HeaderUserDots"
 					@ClickOut="HeaderUserDots_close"
@@ -94,6 +94,7 @@
 				</div>
 				<Chat
 					v-show="Chat_show"
+					:user="user"
 				/>
 				<!-- <Sender /> -->
 			</div>
@@ -111,8 +112,8 @@
 	import Chat from '@/components/Chat'
 	// import Sender from '@/components/Sender'
 	import VK from 'vk-api-help'
+	import { Myvk, func } from '@/mfunc.js'
 	// import token from 'raw-loader!./token.txt'
-	import fs from 'fs'
 	export default {
 		name: 'general',
 		components: {
@@ -127,10 +128,12 @@
 		data() {
 			return {
 				selectedId: 0,
+				user: false,
 				UserId: 0,
 				Active_token: '',
 				// searchtext: '',
-				status: 'Печатает...',
+				status: 'Печатает',
+				isTyping: false,
 				addAcount_show: false,
 				settings_menu_show: false,
 				header_menu_show: false,
@@ -205,29 +208,75 @@
 		},
 		async mounted() {
 			console.log('mounted');
-			this.Avatars_json = this.loadJson('Avatars.json');
+			this.Avatars_json = func.loadJson('Avatars.json');
 			if (this.updates){
 				// this.notify('success', "Проверка обновлений включенна");
 			}
-			setInterval(() => {
-				if (this.updates){
-					this.update_chats();
-				}
-			}, 5000);
+			// setInterval(() => {
+			// 	if (this.updates){
+			// 		this.update_chats();
+			// 	}
+			// }, 5000);
+
+			const easyvk = require('easyvk');
+			const path = require('path');
+			easyvk({
+			  token: this.Active_token,
+			  sessionFile: path.join(__dirname, '.my-session')
+			}).then(async vk => {
+
+			  	const lpSettings = {
+				  forGetLongPollServer: {
+					lp_version: 3, // Изменяем версию LongPoll, в EasyVK используется версия 2
+					need_pts: 1
+				  },
+				  forLongPollServer: {
+					wait: 15 // Ждем ответа 15 секунд
+				  }
+				};
+				var longPollDebugger = ({type, data}) => {
+					
+	  				if (type == 'pollResponse'){
+	  					if (data.updates.length > 0){
+		  					console.log(`[typeLog ${type}]`, data);
+		  					this.longPollUpdate(data.updates);
+		  				}
+	  				} else {
+	  					if (type != 'longPollParamsQuery')
+	  						console.log(`[typeLog ${type}]`, data);
+	  				}
+				};
+				vk.longpoll.connect(lpSettings).then((lpcon) => {
+
+					lpcon.debug(longPollDebugger)
+					lpcon.on('error', console.error)
+						 .on('failure', console.error)
+						 .on('reconnectError', console.error)
+
+					// lpcon.addEventCodeListener(61, (event) => {
+				 // 		console.log(event);
+					// });
+
+					lpcon.on("message", (event) => {
+						console.log(event);
+					});
+
+				});
+			});
 
 			var check_Avatars = false;
 			if (check_Avatars){
 				// this.notify('success', "Проверка Avatars.json на обновления включенна");
-				var last = this.loadJson('Avatars.json');
-				this.saveJson('Avatars_last.json', last);
+				var last = func.loadJson('Avatars.json');
+				func.saveJson('Avatars_last.json', last);
 				setInterval(() => {
-					var last = this.loadJson('Avatars_last.json');
-					var current = this.loadJson('Avatars.json');
+					var last = func.loadJson('Avatars_last.json');
+					var current = func.loadJson('Avatars.json');
 					if (JSON.stringify(last) !== JSON.stringify(current)){
 						this.notify('success', "Avatars.json Изменён");
 						this.ReloadAvatars();
-						var current = this.loadJson('Avatars.json');
-						this.saveJson('Avatars_last.json', current);
+						var current = func.loadJson('Avatars.json');
+						func.saveJson('Avatars_last.json', current);
 					}
 				}, 5000);
 			} else {
@@ -264,8 +313,117 @@
 					this.update_Header_Avatar();
 				}
 			},
+			async longPollUpdate(data){
+				for (var event of data){
+					switch(event[0]){
+						case 4:
+							// Новое сообщение
+							var id = Math.abs(event[1]);
+							var Mvk = new Myvk(this.getToken());
+							var json = await Mvk.myMethod('messages.getConversations', {
+								offset: 0,
+								count: 100,
+								filter: 'all',
+								fields: 'photo_200',
+								extended: 1
+							});
+							this.addUsers(json);
+							break;
+						case 61:
+							// Стал печатать в Диалоге
+							var id = Math.abs(event[1]);
+							for (var i = 0; i < this.users.length; i++){
+								if (this.users[i].id == id){
+									this.users[i].isTyping = true;
+									setTimeout(() => {
+										this.users[i].isTyping = false;
+									}, 5000);
+									break;
+								}
+							}
+							// console.log('typing_id:', id);
+							break;
+						case 62:
+							// Стал печатать в беседе
+							break;
+						case 63:
+							// Стали печатать в беседе
+							break;
+						case 64:
+							// записывают аудиосообщение в беседе
+							break;
+						case 8:
+							// Стал онлайн
+							var id = Math.abs(event[1]);
+							var Mvk = new Myvk(this.getToken());
+							var json = await Mvk.myMethod('users.get', {
+								user_ids: id,
+								fields: 'online, first_name, last_name'
+							});
+							var User = json.response[0];
+							var online = false;
+							var online_mobile = false;
+
+							if (User.online){
+								online = true;
+								if (User.online_mobile){
+									online_mobile = true;
+								}
+							}
+							
+							var full_online = false;
+
+							if (online == false && online_mobile == false){
+								full_online = false;
+							} else {
+								full_online = true;
+							}
+
+							if (full_online){
+								if (online_mobile){
+									var online_type = 'mobile';
+								} else if (online){
+									var online_type = 'online';
+								}
+							}
+
+							online_type = online_type == 'online' ? true : false;
+							
+							var account = `${User.first_name} ${User.last_name}`;
+							for (var i = 0; i < this.users.length; i++){
+								if (this.users[i].id == id){
+									this.users[i].online = true;
+									this.users[i].online_type = online_type;
+									break;
+								}
+							}
+							// console.log('', account);
+							this.notify('success', `online: ${account}`)
+							break;
+						case 9:
+							// Стал оффлайн
+							var id = Math.abs(event[1]);
+							var Mvk = new Myvk(this.getToken());
+							var json = await Mvk.myMethod('users.get', {
+								user_ids: id,
+								fields: 'first_name, last_name'
+							});
+							var user = json.response[0];
+							var account = `${user.first_name} ${user.last_name}`;
+							for (var i = 0; i < this.users.length; i++){
+								if (this.users[i].id == id){
+									this.users[i].online = false;
+									break;
+								}
+							}
+							// console.log('offline:', account);
+							this.notify('error', `offline: ${account}`)
+							break;
+					}
+				}
+			},
 			async preloadAvatar(){
-				var users_json = this.loadJson('users.json');
+				var users_json = func.loadJson('users.json');
 				var arr = [];
 				global.arr;
 				if (users_json.length > 0){
@@ -366,7 +524,7 @@
 					'warning',
 					'error'
 				];
-				if (!this.in_array(method.toLowerCase(), list)){
+				if (!func.in_array(method.toLowerCase(), list)){
 					text = method;
 					method = '';
 				}
@@ -398,11 +556,9 @@
 			},
 			Close_token(){
 				this.addAcount_show = false;
-				// document.querySelector('.addAcount_').style.display = 'none';
 			},
 			addAcount() {
 				this.addAcount_show = true;
-				// document.querySelector('.addAcount_').style.display = 'flex';
 			},
 			addAvatarRemove(obj){
 				
@@ -410,7 +566,7 @@
 			async add_token() {
 				if (this.token_text.length > 0){
 					var text = this.token_text;
-					var users_json = this.loadJson('users.json');
+					var users_json = func.loadJson('users.json');
 					var exist = false;
 					for (var el of users_json){
 						if (el.token == text){
@@ -419,34 +575,18 @@
 						}
 					}
 					if (exist == false){
-						var vk = new VK.VkRequest(text)
-						await vk.method('users.get', { fields: 'first_name, last_name' }).then(async (json) => {
-							var user = json.response[0];
-							var accaount = `${user.first_name} ${user.last_name}`;
-							this.token_text = '';
-							users_json.push({
-								token: text
-							});
-							this.saveJson('users.json', users_json);
-							this.notify('success', `Акканут: ${accaount} Добавлен!`);
-							await this.sleep(5000).then(() => window.location.reload());
-						}).catch({ name: 'VkApiError' }, error => {
-							this.notify('error', `VKApi: ${error.error_msg}`);
-							console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
-							switch(error.error_code) {
-									case 14:
-											console.log('Captcha error');
-									break;  
-									case 5:
-											console.log('No auth');
-									break;
-									default:
-										console.log(error.error_msg);
-							}
-						}).catch(error => {
-							this.notify('error', error);
-							console.log(`Other error ${error}`);
+						var Mvk = new Myvk(this.getToken());
+						var json = await Mvk.myMethod('users.get', { fields: 'first_name, last_name' });
+						var user = json.response[0];
+						var accaount = `${user.first_name} ${user.last_name}`;
+						this.token_text = '';
+						users_json.push({
+							token: text
 						});
+						func.saveJson('users.json', users_json);
+						this.notify('success', `Акканут: ${accaount} Добавлен!`);
+						await this.sleep(5000).then(() => window.location.reload());
+						var vk = new VK.VkRequest(text);
 					} else {
 
 					}
@@ -454,7 +594,7 @@
 			},
 			avatarFilter(id){
 				if (this.Avatars_json.length == 0){
-					var json = this.loadJson('Avatars.json');
+					var json = func.loadJson('Avatars.json');
 					for (var el of json){
 						if (el.id == id){
 							if (el.use == true){
@@ -477,11 +617,11 @@
 			},
 			select_accs(user_id){
 				var banner = document.querySelector('.banner');
-				if (this.in_array('hidden', banner.classList)){
+				if (func.in_array('hidden', banner.classList)){
 					banner.classList.remove('hidden');
 				}
 				var header = document.querySelector('#header');
-				if (!this.in_array('hidden', header.classList)){
+				if (!func.in_array('hidden', header.classList)){
 					header.classList.add('hidden');
 				}
 				this.Chat_show = false;
@@ -497,15 +637,9 @@
 				this.selectedId = 0;
 				// console.log(user_id, this.Active_token);
 			},
-			loadJson(filename){
-				return JSON.parse(fs.readFileSync(__dirname + '/' + filename, 'utf8'));
-			},
-			saveJson(filename, data){
-				fs.writeFileSync(__dirname + '/' + filename, JSON.stringify(data, null, '\t'));
-			},
 			getToken(){
 				if (this.Active_token.length == 0){
-					var json = this.loadJson('users.json');
+					var json = func.loadJson('users.json');
 					this.Active_token = json[0].token;
 				}
 				return this.Active_token;
@@ -527,17 +661,16 @@
 			Close_settings(){
 				document.querySelector('.hider').style.display = 'none';
 				document.querySelector('.settings').style.display = 'none';
-				// this.saveJson('Avatars.json', this.Avatars_json);
+				// func.saveJson('Avatars.json', this.Avatars_json);
 			},
 			search_enter(text){
 				console.log(text)
-				// this.VkMethod('messages.searchConversations', {
+				// var Mvk = new Myvk(this.getToken());
+				// var json = Mvk.myMethod('messages.searchConversations', {
 				// 	q: text,
 				// 	count: 100,
 				// 	extended: 1,
 				// 	fields: 'photo_200, id, first_name, last_name'
-				// }, (json) => {
-
 				// });
 			},
 			change_theme() {
@@ -633,75 +766,50 @@
 				var HedName = document.querySelector('h5');
 				var status = document.querySelector('.status i');
 
-				var vk = new VK.VkRequest(this.Active_token);
-				await vk.method('users.get', { user_ids: user_id, fields: 'sex, photo_200, first_name, last_name' }).then(json => {
-					var User = json.response[0];
-					if (this.avatarFilter(user_id) !== false){
-						var img_link = this.avatarFilter(user_id);
-					} else {
-						var img_link = User.photo_200;
-					}
-					HedAvatar.setAttribute('src', img_link);
-					HedName.textContent = `${User.first_name} ${User.last_name}`;
-					var sex = User.sex == 1 ? 'Была' : 'Был';
-					global.sex = sex;
-				}).catch({ name: 'VkApiError' }, error => {
-					console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
-					switch(error.error_code) {
-							case 14:
-									console.log('Captcha error');
-							break;  
-							case 5:
-									console.log('No auth');
-							break;
-							default:
-								console.log(error.error_msg);
-					}
-				}).catch(error => {
-					console.log(`Other error ${error}`);
-				});
+				var Mvk = new Myvk(this.getToken());
+				var json = await Mvk.myMethod('users.get', { user_ids: user_id, fields: 'sex, photo_200, first_name, last_name' });
+				var User = json.response[0];
+				if (this.avatarFilter(user_id) !== false){
+					var img_link = this.avatarFilter(user_id);
+				} else {
+					var img_link = User.photo_200;
+				}
+				HedAvatar.setAttribute('src', img_link);
+				HedName.textContent = `${User.first_name} ${User.last_name}`;
+				var sex = User.sex == 1 ? 'Была' : 'Был';
 			},
 			async openChat(user_id){
 				var HedAvatar = document.querySelector('.avatar img');
 				var HedName = document.querySelector('h5');
 				var status = document.querySelector('.status i');
 
-				var vk = new VK.VkRequest(this.Active_token);
-				await vk.method('users.get', { user_ids: user_id, fields: 'sex, photo_200, first_name, last_name' }).then(json => {
-					var User = json.response[0];
-					if (this.avatarFilter(user_id) !== false){
-						var img_link = this.avatarFilter(user_id);
-					} else {
-						var img_link = User.photo_200;
+				for (var us of this.users){
+					if (us.id == user_id){
+						this.user = us;
 					}
-					HedAvatar.setAttribute('src', img_link);
-					HedName.textContent = `${User.first_name} ${User.last_name}`;
-					var sex = User.sex == 1 ? 'Была' : 'Был';
-					global.sex = sex;
-				}).catch({ name: 'VkApiError' }, error => {
-					console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
-					switch(error.error_code) {
-							case 14:
-									console.log('Captcha error');
-							break;  
-							case 5:
-									console.log('No auth');
-							break;
-							default:
-								console.log(error.error_msg);
-					}
-				}).catch(error => {
-					console.log(`Other error ${error}`);
-				});
+				}
+
+				var Mvk = new Myvk(this.getToken());
+				var json = await Mvk.myMethod('users.get', { user_ids: user_id, fields: 'sex, photo_200, first_name, last_name' });
+				var User = json.response[0];
+				if (this.avatarFilter(user_id) !== false){
+					var img_link = this.avatarFilter(user_id);
+				} else {
+					var img_link = User.photo_200;
+				}
+				HedAvatar.setAttribute('src', img_link);
+				HedName.textContent = `${User.first_name} ${User.last_name}`;
+				var sex = User.sex == 1 ? 'Была' : 'Был';
+
 				this.Chat_show = true;
 				// статус онлайна (0|1)
 				// Статус времени когда был последний раз в сети (timestamp)
-				await vk.method('messages.getLastActivity', { user_id: user_id }).then(async (json) => {
-					global.sex;
+				await Mvk.myMethod('messages.getLastActivity', { user_id: user_id }).then((json) => {
 					var online = json.response.online;
 					var dt = new Date();
 					var dt_timestamp = dt.getTime();
 					var timestamp = json.response.time;
+					console.log(json.response);
 					if (online == 1){
 						this.status = 'онлайн';
 					} else {
@@ -831,28 +939,14 @@
 							this.status = endResult;
 						}
 					}
-				}).catch({ name: 'VkApiError' }, error => {
-					console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
-					switch(error.error_code) {
-							case 14:
-									console.log('Captcha error');
-							break;  
-							case 5:
-									console.log('No auth');
-							break;
-							default:
-								console.log(error.error_msg);
-					}
-				}).catch(error => {
-					console.log(`Other error ${error}`);
 				});
-
+				
 				var banner = document.querySelector('.banner');
 				if (!('hidden' in banner.classList)){
 					banner.classList.add('hidden');
 				}
 				var header = document.querySelector('#header');
-				if (this.in_array('hidden', header.classList)){
+				if (func.in_array('hidden', header.classList)){
 					header.classList.remove('hidden');
 				}
 			},
@@ -939,57 +1033,19 @@
 					console.log(`Other error ${error}`);
 				});
 			},
-			VkMethod(met, opt, callcback){
-				const token = this.getToken();
-				var vk = new VK.VkRequest(token)
-				vk.method(met, opt).then(json => callcback(json)).catch({ name: 'VkApiError' }, error => {
-					console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
-					switch(error.error_code) {
-							case 14:
-									console.log('Captcha error');
-							break;  
-							case 5:
-									console.log('No auth');
-							break;
-							default:
-								console.log(error.error_msg);
-					}
-				}).catch(error => {
-					console.log(`Other error ${error}`);
-				});
-			},
-			load_chats(){
-				const token = this.getToken();
-				var vk = new VK.VkRequest(token)
-				vk.method('messages.getConversations', {
+			async load_chats(){
+				var Mvk = new Myvk(this.getToken());
+				var json = await Mvk.myMethod('messages.getConversations', {
 					offset: 0,
 					count: 100,
 					filter: 'all',
 					fields: 'photo_200',
 					extended: 1
-				}).then( async (json) => {
-					console.log(json);
-					// console.log(json.response.items[0]);
-					await this.addUsers(json);
-					this.hidePlaceholder();
-					this.sleep(500).then(() => {
-						this.loaded();
-					});
-					
-				}).catch({ name: 'VkApiError' }, error => {
-					console.log(`VKApi error ${error.error_code} ${error.error_msg}`);
-					switch(error.error_code) {
-							case 14:
-									console.log('Captcha error');
-							break;  
-							case 5:
-									console.log('No auth');
-							break;
-							default:
-								console.log(error.error_msg);
-					}
-				}).catch(error => {
-					console.log(`Other error ${error}`);
+				});
+				await this.addUsers(json);
+				this.hidePlaceholder();
+				this.sleep(500).then(() => {
+					this.loaded();
 				});
 			},
 			hidePlaceholder(){
@@ -1000,7 +1056,7 @@
 			},
 			async update_chats(){
 				const token = this.getToken();
-				var vk = new VK.VkRequest(token)
+				var vk = new VK.VkRequest(token);
 				await vk.method('messages.getConversations', {
 					offset: 0,
 					count: 100,
@@ -1028,13 +1084,6 @@
 			},
 			sleep(ms) {
 				return new Promise(resolve => setTimeout(resolve, ms));
-			},
-			in_array(needle, haystack) {
-			    var length = haystack.length;
-			    for(var i = 0; i < length; i++) {
-			        if(haystack[i] == needle) return true;
-			    }
-			    return false;
 			},
 			randomInteger(min, max) {
 				// случайное число от min до (max+1)
@@ -1389,6 +1438,7 @@
 								CUsers.push({
 									selected: TSel,
 									type: 'user',
+									isTyping: false,
 									unread: unread,
 									online: full_online,
 									online_type: online_type,

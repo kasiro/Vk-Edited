@@ -41,6 +41,7 @@
 }
 
 :root #app[data-mode=light] {
+  --general-color: #5C63E0;
   --bg-color: #fff;
   --bg-lighten: #fff;
   --bg-f: #aaa;
@@ -103,14 +104,23 @@ body {
   height: 30px;
   width: 100%;
   position: relative;
-  /*margin-left: -215px;*/
   justify-content: center;
   margin-top: 3%;
 }
 
+.When_in_message {
+  display: flex;
+  height: 30px;
+  width: 95%;
+  padding: 20px;
+  margin-bottom: 10px;
+  position: relative;
+  justify-content: center;
+}
+
 .When div {
   height: 18px;
-  width: 70px;
+  /*width: 70px;*/
   font-weight: bold;
   padding: 5px 10px;
   border-radius: 50px;
@@ -123,18 +133,126 @@ body {
   display: flex;
   width: 100%;
   height: 100%;
+  max-height: 92%;
+  overflow-y: scroll;
+  overflow-x: none;
 }
 
 .message {
   display: flex;
   min-width: 200px;
-  max-width: 300px;
+  max-width: 400px;
+  min-height: 60px;
+  max-height: 400px;
   margin-left: 10px;
   padding: 7px;
   border-radius: 20px;
 }
 .message:first-child {
   margin-top: 47px;
+}
+
+.message.last {
+  display: flex;
+  min-width: 200px;
+  max-width: 400px;
+  min-height: 42px;
+  max-height: 400px;
+  margin-left: 55px;
+  padding: 7px;
+  border-radius: 20px;
+}
+.message.last:first-child {
+  margin-top: 47px;
+}
+
+.message_last_time {
+  /*display: flex;*/
+  min-width: 200px;
+  max-width: 400px;
+  min-height: 42px;
+  max-height: 400px;
+  margin-left: 55px;
+  padding: 7px;
+  border-radius: 20px;
+}
+.message_last_time:first-child {
+  margin-top: 47px;
+}
+
+.message_last_time .description_me {
+  background: #1D1D1D;
+  padding: 10px;
+  border-radius: 15px;
+  border: 3px solid #323232;
+}
+
+.message_last_time .description {
+  background: #323232;
+  padding: 10px;
+  display: flex;
+  border-top-left-radius: 5px !important;
+  border-radius: 15px;
+  border: 4px solid transparent;
+}
+
+.message_last_time .user_last_message {
+  margin-top: 3px;
+  font-weight: bold;
+}
+
+.message_last_time .user_name span {
+  color: #ccc;
+  flex: 0.3;
+  font-weight: 300;
+  font-size: 14px;
+  margin-left: 5px;
+}
+
+.message.last .description_me {
+  background: #1D1D1D;
+  padding: 10px;
+  border-radius: 15px !important;
+  border: 3px solid #323232;
+}
+
+.message.last .description {
+  background: #323232;
+  padding: 7px;
+  display: flex;
+  border-radius: 15px !important;
+  border: 4px solid transparent;
+}
+
+.message.photo_img_txt {
+  min-height: 300px;
+}
+
+.message.photo_img {
+  min-height: 280px;
+}
+
+.message .photo {
+  margin-top: 10px;
+  padding: 0px 5px;
+}
+
+.message .photo img {
+  max-width: 400px;
+  border-radius: 10px;
+}
+
+.message.last .user_last_message {
+  margin-top: 3px;
+  font-weight: bold;
+}
+
+.message.last .user_name span {
+  color: #ccc;
+  flex: 0.3;
+  font-weight: 300;
+  font-size: 14px;
+  margin-left: 5px;
 }
 
 .message .user_last_message {
@@ -145,6 +263,7 @@ body {
 .message .description {
   background: #323232;
   padding: 10px;
+  display: flex;
   border-top-left-radius: 5px !important;
   border-radius: 15px;
   border: 4px solid transparent;
@@ -153,7 +272,7 @@ body {
 .message .description_me {
   background: #1D1D1D;
   padding: 10px;
-  flex: 2;
+  /*flex: 2;*/
   border-top-left-radius: 5px !important;
   border-radius: 15px;
   border: 3px solid #323232;
@@ -167,6 +286,95 @@ body {
   margin-left: 5px;
 }
 
+.block-stabilization-chat {
+  width: initial;
+  margin-top: 25px;
+  margin-right: 10px;
+  padding: 5px;
+}
+
+.dot_read {
+  display: flex;
+  align-items: flex-end;
+}
+
+.dot_read .notread {
+  width: 8px;
+  height: 8px;
+  background: var(--general-color);
+  border-radius: 50px;
+  margin-left: 5px;
+  margin-bottom: 10px;
+}
+
+.typing {
+  display: flex;
+  align-items: center;
+}
+
+.typing .text {
+  font-size: 15px;
+}
+
+.typing .text::after {
+  content: "";
+  animation: typing 1.2s infinite;
+}
+
+.typing .s1 {
+  animation: type 1s infinite;
+  animation-delay: 1s;
+}
+
+.typing .s2 {
+  animation: type 1s infinite;
+  animation-delay: 1.2s;
+}
+
+.typing .s3 {
+  animation: type 1s infinite;
+  animation-delay: 1.3s;
+}
+
+.typing .dots {
+  display: flex;
+  align-items: center;
+}
+
+.typing small {
+  width: 8px;
+  height: 8px;
+  background: var(--general-color);
+  border-radius: 50px;
+  margin-left: 5px;
+  /*transition: 0.3s;*/
+}
+
+@keyframes typing {
+  0% {
+    content: ".";
+  }
+  50% {
+    content: "..";
+  }
+  100% {
+    content: "...";
+  }
+}
+@keyframes type {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.2);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 .ActiveStatus {
   width: 10px;
   height: 10px;
@@ -804,7 +1012,7 @@ ul, li {
 }
 
 /* Блок с именем пользователя и с последним сообщением и еще с датой и количеством */
-.description {
+.user .description {
   display: flex;
   flex: 2;
 }
